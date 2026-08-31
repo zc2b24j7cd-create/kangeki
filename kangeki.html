@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>観劇・推し活ログ (Dark Mode)</title>
+  <style>
+    :root {
+      --bg-color: #121212;
+      --card-bg: #1e1e1e;
+      --accent-color: #bb86fc;
+      --accent-variant: #3700b3;
+      --text-color: #e0e0e0;
+      --text-muted: #a0a0a0;
+      --border-color: #333333;
+      --danger-color: #cf6679;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 12px;
+      max-width: 600px;
+      margin: 0 auto;
+      padding-bottom: 60px;
+    }
+
+    h1 {
+      font-size: 1.4rem;
+      text-align: center;
+      margin: 16px 0;
+      color: var(--accent-color);
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 12px;
+      background-color: var(--card-bg);
+      border: 1px solid var(--border-color);
+      color: var(--text-muted);
+      border-radius: 8px;
+      font-size: 0.9rem;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background-color: var(--accent-color);
+      color: #000;
+      border-color: var(--accent-color);
+    }
+
+    .tab-content {
+      display: none;
+    }
+
+    .tab-content.active {
+      display: block;
+    }
+
+    .card {
+      background-color: var(--card-bg);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 16px;
+      border: 1px solid var(--border-color);
+    }
+
+    .card-title {
+      font-size: 1.1rem;
+      color: var(--accent-color);
+      margin-bottom: 12px;
+      border-bottom: 1px solid var(--border-color);
+      padding-bottom: 6px;
+    }
+
+    .form-group {
+      margin-bottom: 12px;
+    }
+
+    label {
+      display: block;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-bottom: 4px;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 10px;
+      background-color: #2a2a2a;
+      border: 1px solid var(--border-color);
+      border-radius: 6px;
+      color: var(--text-color);
+      font-size: 0.95rem;
+    }
+
+    .grid-2 {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+    }
+
+    .btn {
+      width: 100%;
+      padding: 12px;
+      background-color: var(--accent-color);
+      color: #000;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      cursor: pointer;
+      margin-top: 8px;
+    }
+
+    .btn-secondary {
+      background-color: transparent;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+    }
+
+    .btn-danger {
+      background-color: transparent;
+      border: 1px solid var(--danger-color);
+      color: var(--danger-color);
+      padding: 6px 12px;
+      font-size: 0.8rem;
+    }
+
+    /* スクショ映え用ダッシュボード */
+    .dashboard-summary {
+      background: linear-gradient(135deg, #2c1e38, #1e1e1e);
+      border: 1px solid var(--accent-color);
+      text-align: center;
+      padding: 20px;
+    }
+
+    .total-amount {
+      font-size: 2rem;
+      font-weight: bold;
+      color: var(--accent-color);
+      margin: 8px 0;
+    }
+
+    .item-card {
+      position: relative;
+      background-color: var(--card-bg);
+      border-left: 4px solid var(--accent-color);
+    }
+
+    .item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 8px;
+    }
+
+    .item-title {
+      font-weight: bold;
+      font-size: 1.1rem;
+    }
+
+    .item-date {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .badge {
+      display: inline-block;
+      background-color: #333;
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      margin-right: 4px;
+    }
+
+    .cost-breakdown {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px;
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      margin-top: 8px;
+      padding-top: 8px;
+      border-top: 1px dashed var(--border-color);
+    }
+  </style>
+</head>
+<body>
+
+  <h1>🎭 観劇＆推し活ログ</h1>
+
+  <!-- ナビゲーション -->
+  <div class="nav-tabs">
+    <button class="tab-btn active" onclick="switchTab('dashboard')">集計・一覧</button>
+    <button class="tab-btn" onclick="switchTab('add-stage')">公演登録</button>
+    <button class="tab-btn" onclick="switchTab('add-fc')">FC管理</button>
+  </div>
+
+  <!-- 1. ダッシュボード・一覧タブ -->
+  <div id="dashboard" class="tab-content active">
+    <!-- スクショ映え用サマリーカード -->
+    <div class="card dashboard-summary">
+      <label>総推し活費用（全期間）</label>
+      <div class="total-amount" id="total-all-cost">¥0</div>
+      <div style="font-size: 0.8rem; color: var(--text-muted);">
+        公演支出: <span id="total-stage-cost">¥0</span> | FC会費: <span id="total-fc-cost">¥0</span>
+      </div>
+    </div>
+
+    <div id="stage-list-container"></div>
+  </div>
+
+  <!-- 2. 公演登録タブ -->
+  <div id="add-stage" class="tab-content">
+    <div class="card">
+      <div class="card-title">公演・支出の記録</div>
+      <form id="stage-form">
+        <div class="form-group">
+          <label>公演名</label>
+          <input type="text" id="stage-name" required placeholder="例: 舞台「〇〇」">
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>日時</label>
+            <input type="date" id="stage-date" required>
+          </div>
+          <div class="form-group">
+            <label>劇場名</label>
+            <input type="text" id="stage-theater" placeholder="例: 帝国劇場">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>座席（階・列・番号）</label>
+            <input type="text" id="stage-seat" placeholder="例: 1階 8列 15番">
+          </div>
+          <div class="form-group">
+            <label>席種・評価</label>
+            <select id="stage-rating">
+              <option value="★★★★★">★★★★★ (最高)</option>
+              <option value="★★★★☆">★★★★☆ (良い)</option>
+              <option value="★★★☆☆">★★★☆☆ (普通)</option>
+              <option value="★★☆☆☆">★★☆☆☆ (見づらい)</option>
+            </select>
+          </div>
+        </div>
+
+        <div style="margin: 12px 0 8px; font-weight: bold; font-size: 0.9rem; color: var(--accent-color);">支出詳細 (円)</div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>チケット代</label>
+            <input type="number" id="cost-ticket" value="0">
+          </div>
+          <div class="form-group">
+            <label>交通費</label>
+            <input type="number" id="cost-transport" value="0">
+          </div>
+        </div>
+        <div class="grid-2">
+          <div class="form-group">
+            <label>宿泊費</label>
+            <input type="number" id="cost-hotel" value="0">
+          </div>
+          <div class="form-group">
+            <label>グッズ代</label>
+            <input type="number" id="cost-goods" value="0">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>その他費用</label>
+          <input type="number" id="cost-other" value="0">
+        </div>
+
+        <div class="form-group">
+          <label>メモ</label>
+          <textarea id="stage-memo" rows="2" placeholder="感想や見え方のメモなど"></textarea>
+        </div>
+
+        <button type="submit" class="btn">登録する</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 3. FC管理タブ -->
+  <div id="add-fc" class="tab-content">
+    <div class="card">
+      <div class="card-title">ファンクラブ登録</div>
+      <form id="fc-form">
+        <div class="form-group">
+          <label>FC名</label>
+          <input type="text" id="fc-name" required placeholder="例: 〇〇公式FC">
+        </div>
+        <div class="form-group">
+          <label>タイプ</label>
+          <select id="fc-type" onchange="toggleFcInput()">
+            <option value="spot">スポット（月額）</option>
+            <option value="annual">継続（年会費）</option>
+          </select>
+        </div>
+        
+        <div id="fc-spot-inputs">
+          <div class="grid-2">
+            <div class="form-group">
+              <label>月額 (円)</label>
+              <input type="number" id="fc-monthly-cost" value="0">
+            </div>
+            <div class="form-group">
+              <label>加入月数</label>
+              <input type="number" id="fc-months" value="6" placeholder="例: 6">
+            </div>
+          </div>
+        </div>
+
+        <div id="fc-annual-inputs" style="display: none;">
+          <div class="form-group">
+            <label>年会費 (円)</label>
+            <input type="number" id="fc-annual-cost" value="0">
+          </div>
+        </div>
+
+        <button type="submit" class="btn">FCを登録する</button>
+      </form>
+    </div>
+
+    <!-- 登録済みFC一覧 -->
+    <div class="card">
+      <div class="card-title">登録済みFC一覧</div>
+      <div id="fc-list-container"></div>
+    </div>
+
+    <!-- バックアップ機能 -->
+    <div class="card" style="margin-top: 24px;">
+      <div class="card-title">データ管理</div>
+      <button class="btn btn-secondary" onclick="exportData()">データをダウンロード (JSON)</button>
+    </div>
+  </div>
+
+  <script>
+    // データ保持用
+    let appData = {
+      stages: [],
+      fcs: []
+    };
+
+    // 初期化
+    window.onload = function() {
+      const saved = localStorage.getItem('my_stage_log_data');
+      if (saved) {
+        appData = JSON.parse(saved);
+      }
+      render();
+    };
+
+    function saveData() {
+      localStorage.setItem('my_stage_log_data', JSON.stringify(appData));
+      render();
+    }
+
+    // タブ切り替え
+    function switchTab(tabId) {
+      document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+      document.querySelectorAll('.tab-btn').forEach(el => el.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      event.target.classList.add('active');
+    }
+
+    // FC入力欄の切り替え
+    function toggleFcInput() {
+      const type = document.getElementById('fc-type').value;
+      document.getElementById('fc-spot-inputs').style.display = (type === 'spot') ? 'block' : 'none';
+      document.getElementById('fc-annual-inputs').style.display = (type === 'annual') ? 'block' : 'none';
+    }
+
+    // 公演登録処理
+    document.getElementById('stage-form').onsubmit = function(e) {
+      e.preventDefault();
+      const stage = {
+        id: Date.now(),
+        name: document.getElementById('stage-name').value,
+        date: document.getElementById('stage-date').value,
+        theater: document.getElementById('stage-theater').value,
+        seat: document.getElementById('stage-seat').value,
+        rating: document.getElementById('stage-rating').value,
+        ticket: Number(document.getElementById('cost-ticket').value) || 0,
+        transport: Number(document.getElementById('cost-transport').value) || 0,
+        hotel: Number(document.getElementById('cost-hotel').value) || 0,
+        goods: Number(document.getElementById('cost-goods').value) || 0,
+        other: Number(document.getElementById('cost-other').value) || 0,
+        memo: document.getElementById('stage-memo').value
+      };
+      stage.totalCost = stage.ticket + stage.transport + stage.hotel + stage.goods + stage.other;
+      
+      appData.stages.unshift(stage);
+      saveData();
+      this.reset();
+      switchTab('dashboard');
+    };
+
+    // FC登録処理
+    document.getElementById('fc-form').onsubmit = function(e) {
+      e.preventDefault();
+      const type = document.getElementById('fc-type').value;
+      let totalCost = 0;
+      let detailStr = '';
+
+      if (type === 'spot') {
+        const m = Number(document.getElementById('fc-months').value) || 0;
+        const c = Number(document.getElementById('fc-monthly-cost').value) || 0;
+        totalCost = m * c;
+        detailStr = `月額 ¥${c.toLocaleString()} × ${m}ヶ月`;
+      } else {
+        totalCost = Number(document.getElementById('fc-annual-cost').value) || 0;
+        detailStr = `年会費 ¥${totalCost.toLocaleString()}`;
+      }
+
+      const fc = {
+        id: Date.now(),
+        name: document.getElementById('fc-name').value,
+        type: type,
+        detail: detailStr,
+        totalCost: totalCost
+      };
+
+      appData.fcs.push(fc);
+      saveData();
+      this.reset();
+    };
+
+    // 削除処理
+    function deleteStage(id) {
+      if (confirm('この公演ログを削除しますか？')) {
+        appData.stages = appData.stages.filter(s => s.id !== id);
+        saveData();
+      }
+    }
+
+    function deleteFc(id) {
+      if (confirm('このFC記録を削除しますか？')) {
+        appData.fcs = appData.fcs.filter(f => f.id !== id);
+        saveData();
+      }
+    }
+
+    // 描画処理
+    function render() {
+      // 公演合計
+      const stageTotal = appData.stages.reduce((acc, item) => acc + item.totalCost, 0);
+      // FC合計
+      const fcTotal = appData.fcs.reduce((acc, item) => acc + item.totalCost, 0);
+      
+      document.getElementById('total-stage-cost').innerText = '¥' + stageTotal.toLocaleString();
+      document.getElementById('total-fc-cost').innerText = '¥' + fcTotal.toLocaleString();
+      document.getElementById('total-all-cost').innerText = '¥' + (stageTotal + fcTotal).toLocaleString();
+
+      // 公演リスト出力
+      const stageContainer = document.getElementById('stage-list-container');
+      if (appData.stages.length === 0) {
+        stageContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted); margin-top:20px;">まだデータがありません</p>';
+      } else {
+        stageContainer.innerHTML = appData.stages.map(s => `
+          <div class="card item-card">
+            <div class="item-header">
+              <div>
+                <span class="item-date">${s.date}</span>
+                <div class="item-title">${s.name}</div>
+              </div>
+              <div style="text-align:right;">
+                <div style="font-weight:bold; color:var(--accent-color);">¥${s.totalCost.toLocaleString()}</div>
+                <button class="btn-danger" onclick="deleteStage(${s.id})" style="margin-top:4px;">削除</button>
+              </div>
+            </div>
+            <div>
+              <span class="badge">${s.theater || '劇場未入力'}</span>
+              <span class="badge">${s.seat || '座席未入力'}</span>
+              <span class="badge" style="color:#ffd700;">${s.rating}</span>
+            </div>
+            <div class="cost-breakdown">
+              <span>チケ: ¥${s.ticket.toLocaleString()}</span> | 
+              <span>交通: ¥${s.transport.toLocaleString()}</span> | 
+              <span>宿泊: ¥${s.hotel.toLocaleString()}</span> | 
+              <span>グッズ: ¥${s.goods.toLocaleString()}</span>
+            </div>
+            ${s.memo ? `<div style="font-size:0.8rem; margin-top:8px; color:var(--text-color);">${s.memo}</div>` : ''}
+          </div>
+        `).join('');
+      }
+
+      // FCリスト出力
+      const fcContainer = document.getElementById('fc-list-container');
+      if (appData.fcs.length === 0) {
+        fcContainer.innerHTML = '<p style="text-align:center; color:var(--text-muted);">FCの登録はありません</p>';
+      } else {
+        fcContainer.innerHTML = appData.fcs.map(f => `
+          <div style="display:flex; justify-content:space-between; align-items:center; padding:8px 0; border-bottom:1px solid var(--border-color);">
+            <div>
+              <div style="font-weight:bold;">${f.name} <span class="badge">${f.type === 'spot' ? 'スポット' : '継続'}</span></div>
+              <div style="font-size:0.8rem; color:var(--text-muted);">${f.detail}</div>
+            </div>
+            <div style="text-align:right;">
+              <div style="color:var(--accent-color); font-weight:bold;">¥${f.totalCost.toLocaleString()}</div>
+              <button class="btn-danger" onclick="deleteFc(${f.id})" style="margin-top:2px;">削除</button>
+            </div>
+          </div>
+        `).join('');
+      }
+    }
+
+    // JSONエクスポート
+    function exportData() {
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(appData, null, 2));
+      const downloadAnchor = document.createElement('a');
+      downloadAnchor.setAttribute("href", dataStr);
+      downloadAnchor.setAttribute("download", `stage_log_backup_${new Date().toISOString().slice(0,10)}.json`);
+      document.body.appendChild(downloadAnchor);
+      downloadAnchor.click();
+      downloadAnchor.remove();
+    }
+  </script>
+</body>
+</html>
