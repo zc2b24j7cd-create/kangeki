@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="theme-color" content="#14121b">
+<title>推し活手帳 — 観劇費用記録</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@500;700;800&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --bg:#14121b;
+    --bg-soft:#1a1622;
+    --surface:#211c2c;
+    --surface-raised:#2a2436;
+    --curtain:#9c2b41;
+    --curtain-bright:#c23a56;
+    --gold:#c9a24c;
+    --gold-soft:#e2c98a;
+    --ink:#f1e9dc;
+    --ink-dim:#b6ab9c;
+    --ink-faint:#7d7368;
+    --line:rgba(241,233,220,0.12);
+    --danger:#c2604c;
+    --radius-card:18px;
+    --shadow-deep:0 18px 40px -20px rgba(0,0,0,0.7);
+    --font-display:'Shippori Mincho', serif;
+    --font-body:'Zen Kaku Gothic New', sans-serif;
+  }
+  *{ box-sizing:border-box; }
+  html,body{ margin:0; padding:0; }
+  body{
+    background:
+      radial-gradient(ellipse 800px 480px at 50% -10%, rgba(201,162,76,0.09), transparent 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:var(--font-body);
+    -webkit-font-smoothing:antialiased;
+    min-height:100dvh;
+  }
+  button, input, textarea, select{ font:inherit; color:inherit; }
+  button{ cursor:pointer; }
+
+  #app{ max-width:480px; margin:0 auto; min-height:100dvh; position:relative; display:flex; flex-direction:column; }
+
+  /* ---- top bar ---- */
+  .topbar{
+    position:sticky; top:0; z-index:5;
+    backdrop-filter:blur(10px);
+    background:linear-gradient(to bottom, rgba(20,18,27,0.94), rgba(20,18,27,0.78));
+    border-bottom:1px solid var(--line);
+    padding: calc(env(safe-area-inset-top) + 14px) 20px 14px;
+  }
+  .topbar-inner{ display:flex; align-items:center; gap:10px; }
+  .brand-mark{
+    font-family:var(--font-display); font-size:19px; color:var(--gold);
+    border:1px solid var(--gold); width:34px; height:34px; border-radius:50%;
+    display:flex; align-items:center; justify-content:center; flex-shrink:0;
+  }
+  .brand-title{ font-family:var(--font-display); font-weight:700; font-size:19px; letter-spacing:0.02em; margin:0; }
+
+  /* ---- screens ---- */
+  main#screens{ flex:1; padding:18px 16px calc(108px + env(safe-area-inset-bottom)); }
+  .screen{ display:none; }
+  .screen.active{ display:block; animation:fadeIn .28s ease; }
+  @keyframes fadeIn{ from{ opacity:0; transform:translateY(6px);} to{ opacity:1; transform:translateY(0);} }
+
+  .section-block{ margin-top:26px; }
+  .section-block:first-child{ margin-top:0; }
+  .block-title{ font-family:var(--font-display); font-size:16px; font-weight:700; margin:0 0 12px 2px; }
+
+  /* ---- ticket card ---- */
+  .ticket-card{
+    background:var(--surface); border-radius:var(--radius-card); border:1px solid var(--line);
+    box-shadow:var(--shadow-deep); overflow:hidden; position:relative; margin-bottom:16px;
+  }
+  .ticket-main{ padding:18px 20px 16px; }
+  .ticket-date-badge{
+    display:inline-block; font-size:12px; color:var(--gold-soft);
+    background:rgba(201,162,76,0.12); border:1px solid rgba(201,162,76,0.35);
+    padding:4px 10px; border-radius:20px; margin-bottom:10px;
+  }
+  .ticket-title{ font-family:var(--font-display); font-size:18px; font-weight:700; margin:0 0 6px; line-height:1.45; }
+  .ticket-meta{ font-size:13px; color:var(--ink-dim); margin-bottom:6px; line-height:1.6; }
+  .ticket-stars{ color:var(--gold); letter-spacing:2px; font-size:14px; }
+  .ticket-memo{ font-size:13px; color:var(--ink-dim); margin:10px 0 0; line-height:1.7; white-space:pre-wrap; }
+
+  .ticket-perforation{ position:relative; height:0; border-top:2px dashed rgba(241,233,220,0.18); }
+  .ticket-perforation .notch{ position:absolute; top:-9px; width:18px; height:18px; background:var(--bg); border-radius:50%; }
+  .ticket-perforation .notch-left{ left:-9px; }
+  .ticket-perforation .notch-right{ right:-9px; }
+
+  .ticket-stub{ display:flex; align-items:center; justify-content:space-between; padding:14px 20px; background:var(--bg-soft); }
+  .stub-info{ display:flex; flex-direction:column; }
+  .stub-label{ font-size:11px; color:var(--ink-faint); margin-bottom:2px; }
+  .stub-amount{ font-family:var(--font-display); font-size:19px; font-weight:800; color:var(--gold-soft); }
+  .stub-actions{ display:flex; gap:8px; }
+  .icon-btn{
+    width:38px; height:38px; border-radius:50%; border:1px solid var(--line);
+    background:var(--surface-raised); color:var(--ink-dim); font-size:15px;
+    display:flex; align-items:center; justify-content:center;
+  }
+  .icon-btn.danger{ color:var(--danger); }
+
+  /* ---- dashboard hero ---- */
+  .hero-card .ticket-main{ text-align:center; padding-top:28px; padding-bottom:20px; }
+  .hero-eyebrow{ font-size:13px; color:var(--ink-dim); margin-bottom:10px; }
+  .hero-amount{ font-family:var(--font-display); font-size:clamp(32px,9vw,40px); font-weight:800; color:var(--gold-soft); }
+  .hero-sub{ font-size:12px; color:var(--ink-faint); margin-top:10px; }
+  .hero-split{ display:flex; justify-content:space-around; padding:16px 20px 22px; background:var(--bg-soft); }
+  .hero-split-item{ display:flex; flex-direction:column; align-items:center; gap:5px; }
+  .split-label{ font-size:12px; color:var(--ink-dim); }
+  .split-amount{ font-family:var(--font-display); font-weight:700; font-size:16px; }
+
+  .stat-grid{ display:grid; grid-template-columns:1fr 1fr; gap:10px; }
+  .stat-chip{ background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:13px 15px; display:flex; flex-direction:column; gap:5px; }
+  .stat-label{ font-size:12px; color:var(--ink-dim); }
+  .stat-value{ font-family:var(--font-display); font-weight:700; font-size:16px; }
+
+  .year-list{ display:flex; flex-direction:column; gap:8px; }
+  .year-row{ display:flex; justify-content:space-between; align-items:center; padding:13px 16px; background:var(--surface); border:1px solid var(--line); border-radius:12px; }
+  .year-label{ color:var(--ink-dim); font-size:14px; }
+  .year-amount{ font-family:var(--font-display); font-weight:700; }
+
+  .empty-state{ text-align:center; padding:44px 20px; color:var(--ink-faint); border:1px dashed var(--line); border-radius:16px; font-size:14px; line-height:1.9; }
+
+  .settings-desc{ font-size:13px; color:var(--ink-dim); line-height:1.85; margin:0 0 14px; }
+  .settings-desc:last-child{ margin-bottom:0; }
+  .howto-list{ margin:0; padding-left:20px; font-size:14px; color:var(--ink-dim); line-height:2; }
+
+  /* ---- tab bar ---- */
+  .tabbar{
+    position:sticky; bottom:0; z-index:5; display:flex;
+    background:var(--bg-soft); border-top:1px solid var(--line);
+    padding:8px 6px calc(8px + env(safe-area-inset-bottom));
+  }
+  .tab-btn{
+    flex:1; background:none; border:none; color:var(--ink-faint);
+    display:flex; flex-direction:column; align-items:center; gap:4px;
+    padding:8px 4px; font-size:11px;
+  }
+  .tab-btn svg{ width:22px; height:22px; }
+  .tab-btn.active{ color:var(--gold-soft); }
+
+  /* ---- fab ---- */
+  .fab{
+    position:fixed; right:20px; bottom:calc(84px + env(safe-area-inset-bottom));
+    width:58px; height:58px; border-radius:50%; border:none;
+    background:linear-gradient(145deg, var(--curtain-bright), var(--curtain));
+    color:#fff; font-size:28px; line-height:1;
+    box-shadow:0 12px 24px -8px rgba(156,43,65,0.7);
+    display:flex; align-items:center; justify-content:center; z-index:6;
+  }
+  @media (min-width:520px){ .fab{ right:calc(50% - 240px + 20px); } }
+
+  /* ---- modals ---- */
+  .modal-backdrop{
+    position:fixed; inset:0; background:rgba(10,9,14,0.6); backdrop-filter:blur(2px);
+    opacity:0; pointer-events:none; transition:opacity .25s ease; z-index:10;
+  }
+  .modal-backdrop.show{ opacity:1; pointer-events:auto; }
+  .modal{
+    position:fixed; left:0; right:0; bottom:0; max-width:480px; margin:0 auto;
+    background:var(--surface-raised); border-radius:22px 22px 0 0; border:1px solid var(--line); border-bottom:none;
+    padding:20px 20px calc(24px + env(safe-area-inset-bottom));
+    transform:translateY(100%); transition:transform .32s cubic-bezier(.2,.8,.2,1);
+    z-index:11; max-height:88vh; overflow-y:auto;
+  }
+  .modal.show{ transform:translateY(0); }
+  .modal-confirm{
+    left:50%; top:50%; bottom:auto; width:calc(100% - 48px); max-width:360px; right:auto;
+    transform:translate(-50%,-46%) scale(0.96); border-radius:20px;
+    opacity:0; pointer-events:none; transition:opacity .2s ease, transform .2s ease;
+  }
+  .modal-confirm.show{ opacity:1; pointer-events:auto; transform:translate(-50%,-50%) scale(1); }
+
+  .modal h2{ font-family:var(--font-display); font-size:19px; margin:4px 0 18px; }
+  .field{ margin-bottom:14px; }
+  .field label{ display:block; font-size:12px; color:var(--ink-dim); margin-bottom:6px; }
+  input, textarea, select{
+    width:100%; background:var(--surface); border:1px solid var(--line); border-radius:12px;
+    padding:13px 14px; color:var(--ink); font-size:15px;
+  }
+  input:focus, textarea:focus, select:focus{ outline:2px solid var(--gold); outline-offset:1px; border-color:var(--gold); }
+  .field-row{ display:flex; gap:10px; }
+  .field-row .field{ flex:1; }
+  textarea{ min-height:70px; resize:vertical; }
+  select{ appearance:none; background-image:linear-gradient(45deg, transparent 50%, var(--ink-dim) 50%), linear-gradient(135deg, var(--ink-dim) 50%, transparent 50%); background-position:calc(100% - 20px) center, calc(100% - 14px) center; background-size:6px 6px, 6px 6px; background-repeat:no-repeat; }
+
+  .star-input{ display:flex; gap:6px; }
+  .star-btn{ background:none; border:none; font-size:28px; color:var(--ink-faint); padding:4px; line-height:1; }
+  .star-btn.filled{ color:var(--gold); }
+
+  .checkbox-row{ display:flex; align-items:center; gap:9px; margin-bottom:14px; }
+  .checkbox-row input[type=checkbox]{ width:20px; height:20px; accent-color:var(--curtain-bright); }
+  .checkbox-row label{ margin:0; font-size:14px; color:var(--ink); }
+
+  .total-preview{
+    display:flex; justify-content:space-between; align-items:center;
+    background:var(--bg-soft); border:1px dashed var(--line); border-radius:12px;
+    padding:13px 16px; margin:16px 0;
+  }
+  .total-preview .amount{ font-family:var(--font-display); font-weight:800; font-size:19px; color:var(--gold-soft); }
+
+  .modal-actions{ display:flex; gap:10px; margin-top:6px; }
+  .btn{ flex:1; padding:15px; border-radius:14px; border:none; font-size:15px; font-weight:700; text-align:center; }
+  .btn-primary{ background:linear-gradient(145deg, var(--curtain-bright), var(--curtain)); color:#fff; }
+  .btn-secondary{ background:var(--surface); border:1px solid var(--line); color:var(--ink-dim); }
+  .btn-danger{ background:var(--danger); color:#fff; }
+  label.btn{ display:block; }
+
+  body.modal-open{ overflow:hidden; }
+</style>
+</head>
+<body>
+<div id="app">
+
+  <header class="topbar">
+    <div class="topbar-inner">
+      <span class="brand-mark">幕</span>
+      <h1 class="brand-title">推し活手帳</h1>
+    </div>
+  </header>
+
+  <main id="screens">
+
+    <section id="screen-dashboard" class="screen active"></section>
+
+    <section id="screen-performances" class="screen"></section>
+
+    <section id="screen-fc" class="screen"></section>
+
+    <section id="screen-settings" class="screen">
+      <div class="section-block">
+        <h2 class="block-title">バックアップ・復元</h2>
+        <div class="ticket-card"><div class="ticket-main">
+          <p class="settings-desc">記録は端末のブラウザ内に自動で保存されます。機種変更やブラウザのデータ削除に備えて、定期的にバックアップを取ることをおすすめします。</p>
+          <button id="btn-backup" class="btn btn-primary" style="width:100%;margin-bottom:12px;">JSONファイルをダウンロード</button>
+          <label class="btn btn-secondary" style="text-align:center;">
+            バックアップから復元
+            <input type="file" id="input-restore" accept="application/json" style="display:none;">
+          </label>
+        </div></div>
+      </div>
+
+      <div class="section-block">
+        <h2 class="block-title">使い方</h2>
+        <div class="ticket-card"><div class="ticket-main">
+          <ol class="howto-list">
+            <li>右下の「＋」から公演やFCの記録を追加します。</li>
+            <li>「集計」タブで総推し活費用や内訳をいつでも確認できます。</li>
+            <li>データは自動保存されるので、閉じても消えません。</li>
+            <li>機種変更前や心配なときは「バックアップ」を忘れずに。</li>
+          </ol>
+        </div></div>
+      </div>
+
+      <div class="section-block">
+        <h2 class="block-title">ホーム画面に追加する</h2>
+        <div class="ticket-card"><div class="ticket-main">
+          <p class="settings-desc"><strong>iPhone（Safari）：</strong>共有ボタン（□に↑）をタップ →「ホーム画面に追加」を選択</p>
+          <p class="settings-desc"><strong>Android（Chrome）：</strong>右上の「⋮」メニュー →「ホーム画面に追加」を選択</p>
+        </div></div>
+      </div>
+    </section>
+
+  </main>
+
+  <button class="fab" id="fab" aria-label="新規登録">＋</button>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-tab="dashboard">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><line x1="5" y1="18" x2="5" y2="10"/><line x1="12" y1="18" x2="12" y2="6"/><line x1="19" y1="18" x2="19" y2="13"/></svg>
+      集計
+    </button>
+    <button class="tab-btn" data-tab="performances">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8"><rect x="3" y="6" width="18" height="12" rx="2"/><line x1="12" y1="6" x2="12" y2="18" stroke-dasharray="2 2"/></svg>
+      観劇
+    </button>
+    <button class="tab-btn" data-tab="fc">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"><path d="M12 20s-7-4.35-9.5-8.5C.9 8.2 2.6 5 6 5c2 0 3.3 1.1 4 2.2C10.7 6.1 12 5 14 5c3.4 0 5.1 3.2 3.5 6.5C19 15.65 12 20 12 20z"/></svg>
+      FC
+    </button>
+    <button class="tab-btn" data-tab="settings">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"><circle cx="12" cy="12" r="4"/><line x1="12" y1="2" x2="12" y2="5"/><line x1="12" y1="19" x2="12" y2="22"/><line x1="2" y1="12" x2="5" y2="12"/><line x1="19" y1="12" x2="22" y2="12"/><line x1="4.9" y1="4.9" x2="7" y2="7"/><line x1="17" y1="17" x2="19.1" y2="19.1"/><line x1="4.9" y1="19.1" x2="7" y2="17"/><line x1="17" y1="7" x2="19.1" y2="4.9"/></svg>
+      設定
+    </button>
+  </nav>
+</div>
+
+<!-- backdrop -->
+<div class="modal-backdrop" id="modal-backdrop"></div>
+
+<!-- performance modal -->
+<div class="modal" id="modal-performance">
+  <h2 id="perf-modal-title">公演を記録</h2>
+  <form id="form-performance">
+    <input type="hidden" id="perf-id">
+    <div class="field"><label>公演名</label><input type="text" id="perf-title" required placeholder="例：〇〇 全国ツアー"></div>
+    <div class="field-row">
+      <div class="field"><label>公演日</label><input type="date" id="perf-date" required></div>
+      <div class="field"><label>開演時間</label><input type="time" id="perf-time"></div>
+    </div>
+    <div class="field"><label>劇場・会場名</label><input type="text" id="perf-venue" placeholder="例：東京ドーム"></div>
+    <div class="field-row">
+      <div class="field"><label>階</label><input type="text" id="perf-seat-floor" placeholder="1階"></div>
+      <div class="field"><label>列</label><input type="text" id="perf-seat-row" placeholder="A"></div>
+      <div class="field"><label>番</label><input type="text" id="perf-seat-number" placeholder="12"></div>
+    </div>
+    <div class="field"><label>席種</label><input type="text" id="perf-seat-type" placeholder="例：S席、アリーナ"></div>
+    <div class="field">
+      <label>見やすさ</label>
+      <div class="star-input" id="perf-star-input" data-rating="0">
+        <button type="button" class="star-btn" data-value="1">★</button>
+        <button type="button" class="star-btn" data-value="2">★</button>
+        <button type="button" class="star-btn" data-value="3">★</button>
+        <button type="button" class="star-btn" data-value="4">★</button>
+        <button type="button" class="star-btn" data-value="5">★</button>
+      </div>
+    </div>
+    <div class="field"><label>メモ</label><textarea id="perf-memo" placeholder="感想やセトリなど"></textarea></div>
+
+    <div class="field-row">
+      <div class="field"><label>チケット代</label><input type="number" min="0" inputmode="numeric" id="perf-ticket-fee" value="0"></div>
+      <div class="field"><label>交通費</label><input type="number" min="0" inputmode="numeric" id="perf-transport-fee" value="0"></div>
+    </div>
+    <div class="field-row">
+      <div class="field"><label>宿泊費</label><input type="number" min="0" inputmode="numeric" id="perf-lodging-fee" value="0"></div>
+      <div class="field"><label>グッズ代</label><input type="number" min="0" inputmode="numeric" id="perf-goods-fee" value="0"></div>
+    </div>
+    <div class="field"><label>その他費用</label><input type="number" min="0" inputmode="numeric" id="perf-other-fee" value="0"></div>
+
+    <div class="total-preview"><span>合計支出</span><span class="amount" id="perf-total-preview">¥0</span></div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary modal-cancel">キャンセル</button>
+      <button type="submit" class="btn btn-primary">保存する</button>
+    </div>
+  </form>
+</div>
+
+<!-- FC modal -->
+<div class="modal" id="modal-fc">
+  <h2 id="fc-modal-title">FCを登録</h2>
+  <form id="form-fc">
+    <input type="hidden" id="fc-id">
+    <div class="field"><label>FC名</label><input type="text" id="fc-name" required placeholder="例：〇〇 Fan Club"></div>
+    <div class="field">
+      <label>料金形態</label>
+      <select id="fc-plan-type">
+        <option value="monthly">月額</option>
+        <option value="yearly">年額</option>
+      </select>
+    </div>
+    <div class="field"><label>金額</label><input type="number" min="0" inputmode="numeric" id="fc-amount" value="0"></div>
+    <div class="field"><label>加入開始月</label><input type="month" id="fc-start-month" required></div>
+    <div class="checkbox-row"><input type="checkbox" id="fc-ongoing"><label for="fc-ongoing">現在も継続中</label></div>
+    <div class="field" id="fc-end-month-field"><label>退会（予定）月</label><input type="month" id="fc-end-month"></div>
+
+    <div class="total-preview"><span>加入期間の累計費用</span><span class="amount" id="fc-total-preview">¥0</span></div>
+
+    <div class="modal-actions">
+      <button type="button" class="btn btn-secondary modal-cancel">キャンセル</button>
+      <button type="submit" class="btn btn-primary">保存する</button>
+    </div>
+  </form>
+</div>
+
+<!-- confirm modal -->
+<div class="modal modal-confirm" id="modal-confirm">
+  <h2>削除の確認</h2>
+  <p id="confirm-message" style="color:var(--ink-dim); font-size:14px; line-height:1.8;"></p>
+  <div class="modal-actions">
+    <button type="button" class="btn btn-secondary modal-cancel">キャンセル</button>
+    <button type="button" class="btn btn-danger" id="btn-confirm-delete">削除する</button>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var STORAGE_KEY = 'oshikatsu_tracker_data_v1';
+  var state = loadState();
+  var currentTab = 'dashboard';
+  var pendingDelete = null;
+
+  function loadState(){
+    try{
+      var raw = localStorage.getItem(STORAGE_KEY);
+      if(!raw) return { performances:[], fcs:[] };
+      var parsed = JSON.parse(raw);
+      return {
+        performances: Array.isArray(parsed.performances) ? parsed.performances : [],
+        fcs: Array.isArray(parsed.fcs) ? parsed.fcs : []
+      };
+    }catch(e){
+      console.error('load error', e);
+      return { performances:[], fcs:[] };
+    }
+  }
+  function saveState(){
+    try{ localStorage.setItem(STORAGE_KEY, JSON.stringify(state)); }
+    catch(e){ console.error('save error', e); alert('データの保存に失敗しました。端末の空き容量をご確認ください。'); }
+  }
+  function uid(){ return 'id_' + Date.now().toString(36) + '_' + Math.random().toString(36).slice(2,8); }
+
+  function escapeHtml(str){
+    if(str === null || str === undefined) return '';
+    return String(str).replace(/[&<>"']/g, function(m){
+      return { '&':'&amp;', '<':'&lt;', '>':'&gt;', '"':'&quot;', "'":'&#39;' }[m];
+    });
+  }
+  function yen(n){ n = Math.round(Number(n) || 0); return '¥' + n.toLocaleString('ja-JP'); }
+  function starString(n){
+    n = Number(n) || 0;
+    var s = '';
+    for(var i=1;i<=5;i++){ s += (i<=n) ? '★' : '☆'; }
+    return s;
+  }
+  function fmtDate(dateStr, timeStr){
+    if(!dateStr) return '日付未設定';
+    var parts = dateStr.split('-').map(Number);
+    var s = parts[0] + '年' + parts[1] + '月' + parts[2] + '日';
+    if(timeStr) s += ' ' + timeStr + '〜';
+    return s;
+  }
+  function currentMonthStr(){
+    var d = new Date();
+    return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0');
+  }
+  function monthDiff(startStr, endStr){
+    var s = startStr.split('-').map(Number);
+    var e = endStr.split('-').map(Number);
+    return (e[0]-s[0])*12 + (e[1]-s[1]) + 1;
+  }
+  function perfTotal(p){
+    return (Number(p.ticketFee)||0) + (Number(p.transportFee)||0) + (Number(p.lodgingFee)||0) + (Number(p.goodsFee)||0) + (Number(p.otherFee)||0);
+  }
+  function fcTotal(f){
+    var end = f.ongoing ? currentMonthStr() : f.endMonth;
+    if(!f.startMonth || !end) return 0;
+    var months = monthDiff(f.startMonth, end);
+    if(months < 1) months = 1;
+    var amount = Number(f.amount) || 0;
+    if(f.planType === 'yearly'){
+      var periods = Math.max(Math.ceil(months/12), 1);
+      return periods * amount;
+    }
+    return months * amount;
+  }
+
+  /* ---------- render ---------- */
+  function renderAll(){ renderDashboard(); renderPerformances(); renderFCs(); }
+
+  function renderDashboard(){
+    var perfSum = state.performances.reduce(function(a,p){ return a + perfTotal(p); }, 0);
+    var fcSum = state.fcs.reduce(function(a,f){ return a + fcTotal(f); }, 0);
+    var grand = perfSum + fcSum;
+    var cat = { ticket:0, transport:0, lodging:0, goods:0, other:0 };
+    state.performances.forEach(function(p){
+      cat.ticket += Number(p.ticketFee)||0;
+      cat.transport += Number(p.transportFee)||0;
+      cat.lodging += Number(p.lodgingFee)||0;
+      cat.goods += Number(p.goodsFee)||0;
+      cat.other += Number(p.otherFee)||0;
+    });
+    var byYear = {};
+    state.performances.forEach(function(p){
+      var y = p.date ? p.date.split('-')[0] : '未設定';
+      byYear[y] = (byYear[y]||0) + perfTotal(p);
+    });
+    var years = Object.keys(byYear).sort(function(a,b){ return b.localeCompare(a); });
+
+    var el = document.getElementById('screen-dashboard');
+    el.innerHTML =
+      '<div class="ticket-card hero-card">' +
+        '<div class="ticket-main">' +
+          '<div class="hero-eyebrow">総推し活費用</div>' +
+          '<div class="hero-amount">' + yen(grand) + '</div>' +
+          '<div class="hero-sub">公演 ' + state.performances.length + '本 ・ FC ' + state.fcs.length + '件</div>' +
+        '</div>' +
+        '<div class="ticket-perforation"><span class="notch notch-left"></span><span class="notch notch-right"></span></div>' +
+        '<div class="hero-split">' +
+          '<div class="hero-split-item"><span class="split-label">観劇費用</span><span class="split-amount">' + yen(perfSum) + '</span></div>' +
+          '<div class="hero-split-item"><span class="split-label">FC会費</span><span class="split-amount">' + yen(fcSum) + '</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="section-block">' +
+        '<h2 class="block-title">項目別の内訳</h2>' +
+        '<div class="stat-grid">' +
+          '<div class="stat-chip"><span class="stat-label">チケット代</span><span class="stat-value">' + yen(cat.ticket) + '</span></div>' +
+          '<div class="stat-chip"><span class="stat-label">交通費</span><span class="stat-value">' + yen(cat.transport) + '</span></div>' +
+          '<div class="stat-chip"><span class="stat-label">宿泊費</span><span class="stat-value">' + yen(cat.lodging) + '</span></div>' +
+          '<div class="stat-chip"><span class="stat-label">グッズ代</span><span class="stat-value">' + yen(cat.goods) + '</span></div>' +
+          '<div class="stat-chip"><span class="stat-label">その他</span><span class="stat-value">' + yen(cat.other) + '</span></div>' +
+        '</div>' +
+      '</div>' +
+      '<div class="section-block">' +
+        '<h2 class="block-title">年別の観劇費用</h2>' +
+        (years.length ?
+          '<div class="year-list">' + years.map(function(y){
+            return '<div class="year-row"><span class="year-label">' + y + '年</span><span class="year-amount">' + yen(byYear[y]) + '</span></div>';
+          }).join('') + '</div>'
+          : '<p class="empty-state">記録が増えるとここに年別の集計が表示されます。</p>'
+        ) +
+      '</div>';
+  }
+
+  function renderPerformances(){
+    var el = document.getElementById('screen-performances');
+    var list = state.performances.slice().sort(function(a,b){ return (b.date||'').localeCompare(a.date||''); });
+    el.innerHTML =
+      '<div class="section-block">' +
+        '<h2 class="block-title">観劇ログ</h2>' +
+        (list.length ?
+          '<div class="card-list">' + list.map(performanceCardHTML).join('') + '</div>'
+          : '<p class="empty-state">まだ観劇記録がありません。<br>右下の「＋」から最初の1本を記録しましょう。</p>'
+        ) +
+      '</div>';
+  }
+
+  function performanceCardHTML(p){
+    var total = perfTotal(p);
+    var seat = [p.seatFloor, p.seatRow, p.seatNumber].filter(Boolean).join(' / ');
+    var metaParts = [];
+    if(p.venue) metaParts.push(escapeHtml(p.venue));
+    if(seat) metaParts.push(escapeHtml(seat));
+    if(p.seatType) metaParts.push(escapeHtml(p.seatType));
+    return (
+      '<div class="ticket-card" data-id="' + p.id + '">' +
+        '<div class="ticket-main">' +
+          '<div class="ticket-date-badge">' + fmtDate(p.date, p.time) + '</div>' +
+          '<h3 class="ticket-title">' + escapeHtml(p.title) + '</h3>' +
+          (metaParts.length ? '<div class="ticket-meta">' + metaParts.join(' ・ ') + '</div>' : '') +
+          '<div class="ticket-stars">' + starString(p.visibility) + '</div>' +
+          (p.memo ? '<p class="ticket-memo">' + escapeHtml(p.memo) + '</p>' : '') +
+        '</div>' +
+        '<div class="ticket-perforation"><span class="notch notch-left"></span><span class="notch notch-right"></span></div>' +
+        '<div class="ticket-stub">' +
+          '<div class="stub-info"><span class="stub-label">合計</span><span class="stub-amount">' + yen(total) + '</span></div>' +
+          '<div class="stub-actions">' +
+            '<button class="icon-btn edit-perf" data-id="' + p.id + '" aria-label="編集">✎</button>' +
+            '<button class="icon-btn danger delete-perf" data-id="' + p.id + '" aria-label="削除">✕</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  function renderFCs(){
+    var el = document.getElementById('screen-fc');
+    var list = state.fcs.slice().sort(function(a,b){ return (b.startMonth||'').localeCompare(a.startMonth||''); });
+    el.innerHTML =
+      '<div class="section-block">' +
+        '<h2 class="block-title">FC会費管理</h2>' +
+        (list.length ?
+          '<div class="card-list">' + list.map(fcCardHTML).join('') + '</div>'
+          : '<p class="empty-state">まだFCの記録がありません。<br>右下の「＋」から加入中のFCを登録しましょう。</p>'
+        ) +
+      '</div>';
+  }
+
+  function fcCardHTML(f){
+    var total = fcTotal(f);
+    var period = f.startMonth + '〜' + (f.ongoing ? '継続中' : (f.endMonth || '未設定'));
+    var planLabel = f.planType === 'yearly' ? '年額' : '月額';
+    return (
+      '<div class="ticket-card" data-id="' + f.id + '">' +
+        '<div class="ticket-main">' +
+          '<div class="ticket-date-badge">' + period + '</div>' +
+          '<h3 class="ticket-title">' + escapeHtml(f.name) + '</h3>' +
+          '<div class="ticket-meta">' + planLabel + ' ' + yen(f.amount) + '</div>' +
+        '</div>' +
+        '<div class="ticket-perforation"><span class="notch notch-left"></span><span class="notch notch-right"></span></div>' +
+        '<div class="ticket-stub">' +
+          '<div class="stub-info"><span class="stub-label">累計会費</span><span class="stub-amount">' + yen(total) + '</span></div>' +
+          '<div class="stub-actions">' +
+            '<button class="icon-btn edit-fc" data-id="' + f.id + '" aria-label="編集">✎</button>' +
+            '<button class="icon-btn danger delete-fc" data-id="' + f.id + '" aria-label="削除">✕</button>' +
+          '</div>' +
+        '</div>' +
+      '</div>'
+    );
+  }
+
+  /* ---------- modal helpers ---------- */
+  function openModal(id){
+    document.getElementById('modal-backdrop').classList.add('show');
+    document.getElementById(id).classList.add('show');
+    document.body.classList.add('modal-open');
+  }
+  function closeModals(){
+    document.querySelectorAll('.modal').forEach(function(m){ m.classList.remove('show'); });
+    document.getElementById('modal-backdrop').classList.remove('show');
+    document.body.classList.remove('modal-open');
+  }
+  function setStarRating(container, n){
+    container.dataset.rating = n;
+    container.querySelectorAll('.star-btn').forEach(function(b){
+      b.classList.toggle('filled', Number(b.dataset.value) <= n);
+    });
+  }
+
+  /* ---------- performance form ---------- */
+  function updatePerfTotalPreview(){
+    var ids = ['perf-ticket-fee','perf-transport-fee','perf-lodging-fee','perf-goods-fee','perf-other-fee'];
+    var sum = ids.reduce(function(a,id){ return a + (Number(document.getElementById(id).value)||0); }, 0);
+    document.getElementById('perf-total-preview').textContent = yen(sum);
+  }
+  function resetPerfForm(){
+    document.getElementById('form-performance').reset();
+    document.getElementById('perf-id').value = '';
+    setStarRating(document.getElementById('perf-star-input'), 0);
+    updatePerfTotalPreview();
+  }
+  function openPerfAdd(){
+    resetPerfForm();
+    document.getElementById('perf-modal-title').textContent = '公演を記録';
+    openModal('modal-performance');
+  }
+  function openPerfEdit(id){
+    var p = state.performances.find(function(x){ return x.id === id; });
+    if(!p) return;
+    document.getElementById('perf-id').value = p.id;
+    document.getElementById('perf-title').value = p.title || '';
+    document.getElementById('perf-date').value = p.date || '';
+    document.getElementById('perf-time').value = p.time || '';
+    document.getElementById('perf-venue').value = p.venue || '';
+    document.getElementById('perf-seat-floor').value = p.seatFloor || '';
+    document.getElementById('perf-seat-row').value = p.seatRow || '';
+    document.getElementById('perf-seat-number').value = p.seatNumber || '';
+    document.getElementById('perf-seat-type').value = p.seatType || '';
+    setStarRating(document.getElementById('perf-star-input'), p.visibility || 0);
+    document.getElementById('perf-memo').value = p.memo || '';
+    document.getElementById('perf-ticket-fee').value = p.ticketFee || 0;
+    document.getElementById('perf-transport-fee').value = p.transportFee || 0;
+    document.getElementById('perf-lodging-fee').value = p.lodgingFee || 0;
+    document.getElementById('perf-goods-fee').value = p.goodsFee || 0;
+    document.getElementById('perf-other-fee').value = p.otherFee || 0;
+    updatePerfTotalPreview();
+    document.getElementById('perf-modal-title').textContent = '公演を編集';
+    openModal('modal-performance');
+  }
+
+  /* ---------- FC form ---------- */
+  function updateFCTotalPreview(){
+    var plan = document.getElementById('fc-plan-type').value;
+    var amount = Number(document.getElementById('fc-amount').value) || 0;
+    var start = document.getElementById('fc-start-month').value;
+    var ongoing = document.getElementById('fc-ongoing').checked;
+    var end = ongoing ? currentMonthStr() : document.getElementById('fc-end-month').value;
+    var total = 0;
+    if(start && end){
+      total = fcTotal({ planType: plan, amount: amount, startMonth: start, endMonth: end, ongoing: false });
+    }
+    document.getElementById('fc-total-preview').textContent = yen(total);
+  }
+  function resetFCForm(){
+    document.getElementById('form-fc').reset();
+    document.getElementById('fc-id').value = '';
+    document.getElementById('fc-ongoing').checked = false;
+    document.getElementById('fc-end-month-field').style.display = 'block';
+    updateFCTotalPreview();
+  }
+  function openFCAdd(){
+    resetFCForm();
+    document.getElementById('fc-modal-title').textContent = 'FCを登録';
+    openModal('modal-fc');
+  }
+  function openFCEdit(id){
+    var f = state.fcs.find(function(x){ return x.id === id; });
+    if(!f) return;
+    document.getElementById('fc-id').value = f.id;
+    document.getElementById('fc-name').value = f.name || '';
+    document.getElementById('fc-plan-type').value = f.planType || 'monthly';
+    document.getElementById('fc-amount').value = f.amount || 0;
+    document.getElementById('fc-start-month').value = f.startMonth || '';
+    document.getElementById('fc-ongoing').checked = !!f.ongoing;
+    document.getElementById('fc-end-month-field').style.display = f.ongoing ? 'none' : 'block';
+    document.getElementById('fc-end-month').value = f.endMonth || '';
+    updateFCTotalPreview();
+    document.getElementById('fc-modal-title').textContent = 'FCを編集';
+    openModal('modal-fc');
+  }
+
+  /* ---------- delete ---------- */
+  function requestDelete(type, id, label){
+    pendingDelete = { type: type, id: id };
+    document.getElementById('confirm-message').textContent = '「' + label + '」を削除します。この操作は取り消せません。';
+    openModal('modal-confirm');
+  }
+
+  /* ---------- init ---------- */
+  function init(){
+    renderAll();
+
+    document.getElementById('perf-star-input').addEventListener('click', function(e){
+      var btn = e.target.closest('.star-btn');
+      if(!btn) return;
+      setStarRating(document.getElementById('perf-star-input'), Number(btn.dataset.value));
+    });
+    ['perf-ticket-fee','perf-transport-fee','perf-lodging-fee','perf-goods-fee','perf-other-fee'].forEach(function(id){
+      document.getElementById(id).addEventListener('input', updatePerfTotalPreview);
+    });
+    ['fc-plan-type','fc-amount','fc-start-month','fc-end-month'].forEach(function(id){
+      document.getElementById(id).addEventListener('input', updateFCTotalPreview);
+      document.getElementById(id).addEventListener('change', updateFCTotalPreview);
+    });
+    document.getElementById('fc-ongoing').addEventListener('change', function(e){
+      document.getElementById('fc-end-month-field').style.display = e.target.checked ? 'none' : 'block';
+      updateFCTotalPreview();
+    });
+
+    document.querySelectorAll('.tab-btn').forEach(function(btn){
+      btn.addEventListener('click', function(){
+        document.querySelectorAll('.tab-btn').forEach(function(b){ b.classList.remove('active'); });
+        btn.classList.add('active');
+        document.querySelectorAll('.screen').forEach(function(s){ s.classList.remove('active'); });
+        document.getElementById('screen-' + btn.dataset.tab).classList.add('active');
+        document.getElementById('fab').style.display = (btn.dataset.tab === 'settings') ? 'none' : 'flex';
+        currentTab = btn.dataset.tab;
+        window.scrollTo(0,0);
+      });
+    });
+
+    document.getElementById('fab').addEventListener('click', function(){
+      if(currentTab === 'fc'){ openFCAdd(); } else { openPerfAdd(); }
+    });
+
+    document.getElementById('modal-backdrop').addEventListener('click', closeModals);
+    document.querySelectorAll('.modal-cancel').forEach(function(b){ b.addEventListener('click', closeModals); });
+
+    document.addEventListener('click', function(e){
+      var editP = e.target.closest('.edit-perf');
+      if(editP){ openPerfEdit(editP.dataset.id); return; }
+      var delP = e.target.closest('.delete-perf');
+      if(delP){
+        var p = state.performances.find(function(x){ return x.id === delP.dataset.id; });
+        requestDelete('perf', delP.dataset.id, p ? p.title : 'この記録');
+        return;
+      }
+      var editF = e.target.closest('.edit-fc');
+      if(editF){ openFCEdit(editF.dataset.id); return; }
+      var delF = e.target.closest('.delete-fc');
+      if(delF){
+        var f = state.fcs.find(function(x){ return x.id === delF.dataset.id; });
+        requestDelete('fc', delF.dataset.id, f ? f.name : 'このFC');
+        return;
+      }
+    });
+
+    document.getElementById('btn-confirm-delete').addEventListener('click', function(){
+      if(!pendingDelete) return;
+      if(pendingDelete.type === 'perf'){
+        state.performances = state.performances.filter(function(p){ return p.id !== pendingDelete.id; });
+      }else{
+        state.fcs = state.fcs.filter(function(f){ return f.id !== pendingDelete.id; });
+      }
+      pendingDelete = null;
+      saveState();
+      renderAll();
+      closeModals();
+    });
+
+    document.getElementById('form-performance').addEventListener('submit', function(e){
+      e.preventDefault();
+      var id = document.getElementById('perf-id').value || uid();
+      var data = {
+        id: id,
+        title: document.getElementById('perf-title').value.trim(),
+        date: document.getElementById('perf-date').value,
+        time: document.getElementById('perf-time').value,
+        venue: document.getElementById('perf-venue').value.trim(),
+        seatFloor: document.getElementById('perf-seat-floor').value.trim(),
+        seatRow: document.getElementById('perf-seat-row').value.trim(),
+        seatNumber: document.getElementById('perf-seat-number').value.trim(),
+        seatType: document.getElementById('perf-seat-type').value.trim(),
+        visibility: Number(document.getElementById('perf-star-input').dataset.rating) || 0,
+        memo: document.getElementById('perf-memo').value.trim(),
+        ticketFee: Number(document.getElementById('perf-ticket-fee').value) || 0,
+        transportFee: Number(document.getElementById('perf-transport-fee').value) || 0,
+        lodgingFee: Number(document.getElementById('perf-lodging-fee').value) || 0,
+        goodsFee: Number(document.getElementById('perf-goods-fee').value) || 0,
+        otherFee: Number(document.getElementById('perf-other-fee').value) || 0
+      };
+      if(!data.title || !data.date) return;
+      var idx = state.performances.findIndex(function(p){ return p.id === id; });
+      if(idx >= 0) state.performances[idx] = data; else state.performances.push(data);
+      saveState();
+      renderAll();
+      closeModals();
+    });
+
+    document.getElementById('form-fc').addEventListener('submit', function(e){
+      e.preventDefault();
+      var id = document.getElementById('fc-id').value || uid();
+      var ongoing = document.getElementById('fc-ongoing').checked;
+      var data = {
+        id: id,
+        name: document.getElementById('fc-name').value.trim(),
+        planType: document.getElementById('fc-plan-type').value,
+        amount: Number(document.getElementById('fc-amount').value) || 0,
+        startMonth: document.getElementById('fc-start-month').value,
+        ongoing: ongoing,
+        endMonth: ongoing ? '' : document.getElementById('fc-end-month').value
+      };
+      if(!data.name || !data.startMonth) return;
+      var idx = state.fcs.findIndex(function(f){ return f.id === id; });
+      if(idx >= 0) state.fcs[idx] = data; else state.fcs.push(data);
+      saveState();
+      renderAll();
+      closeModals();
+    });
+
+    document.getElementById('btn-backup').addEventListener('click', function(){
+      var blob = new Blob([JSON.stringify(state, null, 2)], { type: 'application/json' });
+      var url = URL.createObjectURL(blob);
+      var a = document.createElement('a');
+      var stamp = new Date().toISOString().slice(0,10);
+      a.href = url;
+      a.download = 'oshikatsu_backup_' + stamp + '.json';
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+    });
+
+    document.getElementById('input-restore').addEventListener('change', function(e){
+      var file = e.target.files[0];
+      if(!file) return;
+      var reader = new FileReader();
+      reader.onload = function(ev){
+        try{
+          var parsed = JSON.parse(ev.target.result);
+          if(!parsed || !Array.isArray(parsed.performances) || !Array.isArray(parsed.fcs)){
+            alert('ファイルの形式が正しくありません。');
+            e.target.value = '';
+            return;
+          }
+          if(!confirm('現在のデータを上書きして復元します。よろしいですか？')){
+            e.target.value = '';
+            return;
+          }
+          state = { performances: parsed.performances, fcs: parsed.fcs };
+          saveState();
+          renderAll();
+          alert('データを復元しました。');
+        }catch(err){
+          alert('ファイルを読み込めませんでした。JSON形式のバックアップファイルを選択してください。');
+        }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    });
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>
