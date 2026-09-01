@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>旅日誌帳</title>
 
-  <!-- PWA全画面・テーマカラー設定 -->
   <meta name="theme-color" content="#b0c8d8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -122,7 +121,7 @@
     /* カテゴリー管理・設定 */
     .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2ebf1; }
 
-    /* 下部ナビゲーション（約5mm下げて調整） */
+    /* 下部ナビゲーション */
     .nav-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: #b0c8d8; border-top: 1px solid #cbd9e3;
@@ -142,13 +141,11 @@
 </head>
 <body>
 
-  <!-- ヘッダー -->
   <div class="header">
     <div class="title">旅日誌帳</div>
     <div class="date" id="current-header-date"></div>
   </div>
 
-  <!-- 全体予算サマリー -->
   <div class="summary-grid">
     <div>
       <div class="summary-label">基本予算</div>
@@ -164,12 +161,10 @@
     </div>
   </div>
 
-  <!-- タブ1: タイムライン（メイン画面） -->
   <div id="tab-timeline" class="tab-content active">
     <div class="card">
       <textarea id="post-input" placeholder="今日の記録を書く..."></textarea>
       
-      <!-- 画像プレビュー -->
       <div id="img-preview-container" style="display:none; margin-bottom:10px;">
         <img id="img-preview" src="" style="max-height: 100px; border-radius: 4px;">
         <button type="button" class="btn-light" onclick="clearImage()" style="font-size:10px; padding:2px 6px;">削除</button>
@@ -192,7 +187,6 @@
     <div id="posts-container" class="posts-list"></div>
   </div>
 
-  <!-- タブ2: 予算分析 -->
   <div id="tab-budget" class="tab-content">
     <div class="card">
       <div class="section-title">カテゴリー別支出内訳</div>
@@ -200,7 +194,6 @@
     </div>
   </div>
 
-  <!-- タブ3: 1日まとめ（カレンダー） -->
   <div id="tab-summary" class="tab-content">
     <div class="card">
       <div class="section-title" id="calendar-month-title"></div>
@@ -218,7 +211,6 @@
     </div>
   </div>
 
-  <!-- タブ4: 設定 -->
   <div id="tab-settings" class="tab-content">
     <div class="card">
       <div class="section-title">基本予算設定</div>
@@ -243,7 +235,6 @@
     </div>
   </div>
 
-  <!-- 下部ナビゲーション -->
   <div class="nav-bar">
     <div class="nav-item active" onclick="switchTab('timeline', this)">
       <div class="nav-dot"></div>タイムライン
@@ -305,11 +296,16 @@
       };
       reader.readAsDataURL(file);
     }
+
     function clearImage() {
       currentPhotoBase64 = '';
-      document.getElementById('img-preview').src = '';
-      document.getElementById('img-preview-container').style.display = 'none';
-      document.getElementById('photo-input').value = '';
+      const imgPreview = document.getElementById('img-preview');
+      const container = document.getElementById('img-preview-container');
+      const photoInput = document.getElementById('photo-input');
+      
+      if(imgPreview) imgPreview.src = '';
+      if(container) container.style.display = 'none';
+      if(photoInput) photoInput.value = '';
     }
 
     function renderCategoryOptions() {
@@ -367,12 +363,16 @@
       posts.unshift(newPost);
       localStorage.setItem('tabi_posts', JSON.stringify(posts));
 
+      // 入力フォームと選択画像の完全初期化
       textInput.value = '';
       amountInput.value = '';
       clearImage();
       dateInput.value = formatDateTime(new Date());
 
+      // 各画面の再描画
       render();
+      renderCalendar();
+      renderBudgetBreakdown();
     });
 
     function editPostCategory(postId) {
@@ -384,11 +384,13 @@
         post.category = newCat.trim();
         localStorage.setItem('tabi_posts', JSON.stringify(posts));
         render();
+        renderBudgetBreakdown();
       }
     }
 
     function renderCalendar() {
       const cellsContainer = document.getElementById('calendar-cells');
+      if(!cellsContainer) return;
       cellsContainer.innerHTML = '';
 
       const year = now.getFullYear();
@@ -440,7 +442,7 @@
           ${post.photo ? `<img src="${post.photo}" class="post-img">` : ''}
           <div class="post-text">${escapeHtml(post.text)}</div>
           <div class="post-footer">
-            <span class="post-tag">${post.category || '未分類'}</span>
+            <span class="post-tag">${post.category ? escapeHtml(post.category) : '未分類'}</span>
             <span class="post-amount">${post.amount ? '¥' + Number(post.amount).toLocaleString() : ''}</span>
           </div>
         </div>
@@ -450,6 +452,7 @@
 
     function renderBudgetBreakdown() {
       const container = document.getElementById('category-breakdown');
+      if(!container) return;
       const totals = {};
       posts.forEach(p => {
         const cat = p.category || '未分類';
@@ -480,6 +483,7 @@
 
     function renderCategorySettings() {
       const list = document.getElementById('category-list');
+      if(!list) return;
       list.innerHTML = categories.map((cat, idx) => `
         <div class="cat-item">
           <span style="font-size:13px;">${escapeHtml(cat)}</span>
