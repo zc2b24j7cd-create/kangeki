@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>旅日誌帳</title>
 
-  <!-- PWA全画面設定 -->
+  <meta name="theme-color" content="#f0f4f1">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="旅日誌帳">
@@ -15,11 +15,11 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-      background-color: #f5f4ef;
-      color: #333333;
-      padding: 20px;
-      padding-top: max(20px, env(safe-area-inset-top));
-      padding-bottom: max(80px, calc(60px + env(safe-area-inset-bottom)));
+      background-color: #f0f4f1; /* グリーン系背景 */
+      color: #2b3a32;
+      padding: 16px;
+      padding-top: max(16px, env(safe-area-inset-top));
+      padding-bottom: calc(90px + env(safe-area-inset-bottom));
     }
 
     /* ヘッダー */
@@ -27,26 +27,27 @@
       display: flex;
       justify-content: space-between;
       align-items: baseline;
-      border-bottom: 1px solid #dcdbd5;
+      border-bottom: 1px solid #d2dcd5;
       padding-bottom: 8px;
       margin-bottom: 15px;
     }
-    .title { font-size: 24px; font-weight: bold; letter-spacing: 1px; }
-    .date { font-size: 13px; color: #888888; }
+    .title { font-size: 22px; font-weight: bold; color: #2d4a3e; letter-spacing: 1px; }
+    .date { font-size: 13px; color: #66786e; }
 
     /* 予算サマリー */
     .summary-grid {
       display: grid;
       grid-template-columns: 1fr 1fr 1fr;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 15px;
       background: #ffffff;
-      padding: 12px;
-      border-radius: 6px;
-      border: 1px solid #e0dfd9;
+      padding: 12px 8px;
+      border-radius: 8px;
+      border: 1px solid #d2dcd5;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
-    .summary-label { font-size: 12px; color: #777777; margin-bottom: 4px; }
-    .summary-value { font-size: 17px; font-weight: 600; }
+    .summary-label { font-size: 11px; color: #66786e; margin-bottom: 4px; }
+    .summary-value { font-size: 15px; font-weight: 700; color: #2d4a3e; }
 
     /* タブ切り替え表示制御 */
     .tab-content { display: none; }
@@ -55,92 +56,96 @@
     /* UIパーツ共通 */
     .card {
       background: #ffffff;
-      border: 1px solid #e0dfd9;
-      border-radius: 6px;
+      border: 1px solid #d2dcd5;
+      border-radius: 8px;
       padding: 14px;
       margin-bottom: 15px;
+      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
-    .section-title { font-size: 15px; font-weight: bold; margin-bottom: 10px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+    .section-title { font-size: 14px; font-weight: bold; color: #2d4a3e; margin-bottom: 10px; border-bottom: 1px solid #e5ece7; padding-bottom: 6px; }
     
     input[type="text"], input[type="number"], select, textarea {
-      border: 1px solid #dcdbd5;
-      border-radius: 4px;
+      border: 1px solid #c4d2c9;
+      border-radius: 6px;
       padding: 8px;
       font-size: 13px;
-      background: #fafaf8;
+      background: #fafcfb;
+      color: #2b3a32;
       width: 100%;
     }
-    textarea { height: 75px; font-size: 15px; resize: none; margin-bottom: 10px; }
+    textarea { height: 70px; font-size: 14px; resize: none; margin-bottom: 10px; }
     
     .btn-submit {
-      background: #1e2a38; color: #ffffff; border: none; border-radius: 4px;
-      padding: 10px 18px; font-size: 14px; font-weight: bold; cursor: pointer; white-space: nowrap;
+      background: #2d4a3e; color: #ffffff; border: none; border-radius: 6px;
+      padding: 10px 16px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap;
     }
     .btn-light {
-      background: #fafaf8; border: 1px solid #dcdbd5; border-radius: 4px;
-      padding: 8px 12px; font-size: 13px; color: #555; cursor: pointer; white-space: nowrap;
+      background: #fafcfb; border: 1px solid #c4d2c9; border-radius: 6px;
+      padding: 8px 10px; font-size: 12px; color: #4a5d52; cursor: pointer; white-space: nowrap;
     }
     .btn-danger {
       background: #d9534f; color: white; border: none; border-radius: 4px;
-      padding: 6px 10px; font-size: 12px; cursor: pointer;
+      padding: 4px 8px; font-size: 11px; cursor: pointer;
     }
 
-    /* フォーム要素レイアウト */
-    .form-row { display: flex; gap: 8px; margin-bottom: 10px; align-items: center; }
-    .input-amount { width: 100px; flex-shrink: 0; }
-    .input-date { font-size: 12px; color: #666; width: auto; }
-    .submit-container { display: flex; justify-content: space-between; align-items: center; }
+    /* フォーム要素レイアウト（画面幅からはみ出さない完全レスポンシブ） */
+    .form-grid-row { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; width: 100%; }
+    .input-photo-btn { flex: 0 0 auto; }
+    .input-amount { flex: 1 1 30%; min-width: 0; }
+    .select-category { flex: 1 1 45%; min-width: 0; }
+    .submit-container { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
+    .input-date { flex: 1; font-size: 12px; color: #66786e; border: 1px solid #c4d2c9; background: #fafcfb; border-radius: 6px; padding: 8px; }
 
     /* タイムライン・投稿 */
     .posts-list { display: flex; flex-direction: column; gap: 12px; }
-    .post-card { background: #ffffff; border: 1px solid #e0dfd9; border-radius: 6px; padding: 14px; }
-    .post-header { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 6px; }
-    .post-text { font-size: 15px; line-height: 1.5; white-space: pre-wrap; margin-bottom: 8px; }
-    .post-img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 4px; margin-bottom: 8px; }
+    .post-card { background: #ffffff; border: 1px solid #d2dcd5; border-radius: 8px; padding: 14px; }
+    .post-header { display: flex; justify-content: space-between; font-size: 12px; color: #66786e; margin-bottom: 6px; }
+    .post-text { font-size: 14px; line-height: 1.5; white-space: pre-wrap; margin-bottom: 8px; }
+    .post-img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
     .post-footer { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
-    .post-amount { font-weight: bold; color: #1e2a38; font-size: 14px; }
-    .post-tag { background: #eef2f5; padding: 2px 8px; border-radius: 4px; color: #446; font-size: 12px; }
+    .post-amount { font-weight: bold; color: #2d4a3e; font-size: 14px; }
+    .post-tag { background: #e8f0ec; padding: 2px 8px; border-radius: 4px; color: #2d4a3e; font-size: 11px; font-weight: 500; }
 
     /* カレンダー（1日まとめ） */
-    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; text-align: center; }
-    .calendar-day-head { font-size: 11px; font-weight: bold; color: #777; padding: 4px 0; }
+    .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
+    .calendar-day-head { font-size: 11px; font-weight: bold; color: #66786e; padding: 4px 0; }
     .calendar-cell {
-      background: #fafaf8; border: 1px solid #e0dfd9; border-radius: 4px;
-      min-height: 52px; padding: 2px; position: relative; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+      background: #fafcfb; border: 1px solid #d2dcd5; border-radius: 4px;
+      min-height: 50px; padding: 2px; position: relative; cursor: pointer; display: flex; flex-direction: column; align-items: center;
     }
-    .calendar-cell.today { border: 2px solid #1e2a38; }
-    .calendar-num { font-size: 10px; color: #555; align-self: flex-start; }
-    .calendar-thumb { width: 100%; height: 32px; object-fit: cover; border-radius: 2px; margin-top: 2px; }
-    .calendar-dot { width: 6px; height: 6px; background: #1e2a38; border-radius: 50%; margin-top: 8px; }
+    .calendar-cell.today { border: 2px solid #2d4a3e; font-weight: bold; }
+    .calendar-num { font-size: 10px; color: #4a5d52; align-self: flex-start; }
+    .calendar-thumb { width: 100%; height: 30px; object-fit: cover; border-radius: 2px; margin-top: 2px; }
+    .calendar-dot { width: 5px; height: 5px; background: #2d4a3e; border-radius: 50%; margin-top: 6px; }
 
     /* カテゴリー管理・設定 */
-    .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #eee; }
+    .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e5ece7; }
 
-    /* 下部ナビゲーション */
+    /* 下部ナビゲーション（高さを底上げ修正） */
     .nav-bar {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 60px;
-      background: #f5f4ef; border-top: 1px solid #e0dfd9;
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: #f0f4f1; border-top: 1px solid #d2dcd5;
       display: flex; justify-content: space-around; align-items: center;
-      padding-bottom: env(safe-area-inset-bottom); z-index: 100;
+      padding-top: 8px;
+      padding-bottom: max(16px, calc(8px + env(safe-area-inset-bottom)));
+      z-index: 100;
     }
     .nav-item {
       display: flex; flex-direction: column; align-items: center;
-      font-size: 12px; color: #777777; cursor: pointer; flex: 1;
+      font-size: 11px; color: #66786e; cursor: pointer; flex: 1;
     }
-    .nav-item.active { color: #111111; font-weight: bold; }
-    .nav-dot { width: 4px; height: 4px; background: #111111; border-radius: 50%; margin-bottom: 2px; opacity: 0; }
+    .nav-item.active { color: #2d4a3e; font-weight: bold; }
+    .nav-dot { width: 4px; height: 4px; background: #2d4a3e; border-radius: 50%; margin-bottom: 2px; opacity: 0; }
     .nav-item.active .nav-dot { opacity: 1; }
   </style>
 </head>
 <body>
 
-  <!-- ヘッダー -->
   <div class="header">
     <div class="title">旅日誌帳</div>
     <div class="date" id="current-header-date"></div>
   </div>
 
-  <!-- 全体予算サマリー -->
   <div class="summary-grid">
     <div>
       <div class="summary-label">基本予算</div>
@@ -156,24 +161,22 @@
     </div>
   </div>
 
-  <!-- タブ1: タイムライン（メイン画面） -->
   <div id="tab-timeline" class="tab-content active">
     <div class="card">
       <textarea id="post-input" placeholder="今日の記録を書く..."></textarea>
       
-      <!-- 画像プレビュー -->
       <div id="img-preview-container" style="display:none; margin-bottom:10px;">
         <img id="img-preview" src="" style="max-height: 100px; border-radius: 4px;">
-        <button type="button" class="btn-light" onclick="clearImage()" style="font-size:11px; padding:2px 6px;">削除</button>
+        <button type="button" class="btn-light" onclick="clearImage()" style="font-size:10px; padding:2px 6px;">削除</button>
       </div>
 
-      <div class="form-row">
-        <label class="btn-light">
-          写真選択
+      <div class="form-grid-row">
+        <label class="btn-light input-photo-btn">
+          写真
           <input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="handlePhotoSelect(event)">
         </label>
         <input type="number" id="amount-input" class="input-amount" placeholder="金額(円)">
-        <select id="category-select"></select>
+        <select id="category-select" class="select-category"></select>
       </div>
       <div class="submit-container">
         <input type="text" id="date-input" class="input-date">
@@ -184,7 +187,6 @@
     <div id="posts-container" class="posts-list"></div>
   </div>
 
-  <!-- タブ2: 予算分析 -->
   <div id="tab-budget" class="tab-content">
     <div class="card">
       <div class="section-title">カテゴリー別支出内訳</div>
@@ -192,10 +194,9 @@
     </div>
   </div>
 
-  <!-- タブ3: 1日まとめ（カレンダー） -->
   <div id="tab-summary" class="tab-content">
     <div class="card">
-      <div class="section-title" id="calendar-month-title">2026年 9月</div>
+      <div class="section-title" id="calendar-month-title"></div>
       <div class="calendar-grid">
         <div class="calendar-day-head">日</div><div class="calendar-day-head">月</div>
         <div class="calendar-day-head">火</div><div class="calendar-day-head">水</div>
@@ -210,11 +211,10 @@
     </div>
   </div>
 
-  <!-- タブ4: 設定 -->
   <div id="tab-settings" class="tab-content">
     <div class="card">
       <div class="section-title">基本予算設定</div>
-      <div class="form-row">
+      <div class="form-grid-row">
         <input type="number" id="setting-base-budget" placeholder="例: 30000">
         <button class="btn-submit" onclick="saveBaseBudget()">保存</button>
       </div>
@@ -222,7 +222,7 @@
 
     <div class="card">
       <div class="section-title">カテゴリー管理</div>
-      <div class="form-row">
+      <div class="form-grid-row">
         <input type="text" id="new-cat-input" placeholder="新カテゴリー名">
         <button class="btn-light" onclick="addCategory()">追加</button>
       </div>
@@ -231,11 +231,10 @@
 
     <div class="card">
       <div class="section-title">データ管理</div>
-      <button class="btn-light" style="width:100%;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
+      <button class="btn-light" style="width:100%; font-weight:bold;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
     </div>
   </div>
 
-  <!-- 下部ナビゲーション -->
   <div class="nav-bar">
     <div class="nav-item active" onclick="switchTab('timeline', this)">
       <div class="nav-dot"></div>タイムライン
@@ -252,7 +251,6 @@
   </div>
 
   <script>
-    // --- 初期設定とデータ保存キー ---
     let baseBudget = Number(localStorage.getItem('tabi_base_budget')) || 30000;
     let categories = JSON.parse(localStorage.getItem('tabi_categories')) || ['食費', '交通費', '観光', '日用品', 'その他'];
     let posts = JSON.parse(localStorage.getItem('tabi_posts')) || [];
@@ -265,8 +263,18 @@
     document.getElementById('current-header-date').textContent = formatDate(now);
     document.getElementById('date-input').value = formatDateTime(now);
     document.getElementById('setting-base-budget').value = baseBudget;
+    document.getElementById('calendar-month-title').textContent = `${now.getFullYear()}年 ${now.getMonth() + 1}月`;
 
-    // --- タブ切り替え ---
+    // 画面上部の予算計算（全体で共有）
+    function updateHeaderSummary() {
+      const totalSpent = posts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const remaining = baseBudget - totalSpent;
+      document.getElementById('base-budget').textContent = `¥${baseBudget.toLocaleString()}`;
+      document.getElementById('total-spent').textContent = `¥${totalSpent.toLocaleString()}`;
+      document.getElementById('remaining-budget').textContent = `¥${remaining.toLocaleString()}`;
+    }
+
+    // タブ切り替え
     function switchTab(tabName, el) {
       document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
@@ -274,11 +282,12 @@
       document.getElementById(`tab-${tabName}`).classList.add('active');
       el.classList.add('active');
 
+      updateHeaderSummary();
       if(tabName === 'summary') renderCalendar();
       if(tabName === 'budget') renderBudgetBreakdown();
     }
 
-    // --- 写真処理 ---
+    // 写真選択
     function handlePhotoSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -297,28 +306,19 @@
       document.getElementById('photo-input').value = '';
     }
 
-    // --- カテゴリーセレクト生成 ---
     function renderCategoryOptions() {
       const select = document.getElementById('category-select');
-      select.innerHTML = '<option value="">(カテゴリーなし)</option>' +
+      select.innerHTML = '<option value="">未分類</option>' +
         categories.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
-    // --- メイン描画処理 ---
     function render() {
       renderCategoryOptions();
-      
-      // 予算計算
-      const totalSpent = posts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-      const remaining = baseBudget - totalSpent;
-      document.getElementById('base-budget').textContent = `¥${baseBudget.toLocaleString()}`;
-      document.getElementById('total-spent').textContent = `¥${totalSpent.toLocaleString()}`;
-      document.getElementById('remaining-budget').textContent = `¥${remaining.toLocaleString()}`;
+      updateHeaderSummary();
 
-      // タイムライン描画
       const container = document.getElementById('posts-container');
       if (posts.length === 0) {
-        container.innerHTML = '<div style="text-align:center; color:#888; margin-top:30px;">まだ記録がありません。</div>';
+        container.innerHTML = '<div style="text-align:center; color:#66786e; margin-top:30px; font-size:13px;">まだ記録がありません。</div>';
         return;
       }
 
@@ -338,7 +338,7 @@
       `).join('');
     }
 
-    // --- 投稿処理 ---
+    // 投稿処理
     document.getElementById('submit-btn').addEventListener('click', () => {
       const textInput = document.getElementById('post-input');
       const amountInput = document.getElementById('amount-input');
@@ -370,7 +370,7 @@
       render();
     });
 
-    // --- 投稿カテゴリーの後付け編集 ---
+    // 投稿のカテゴリー後付け変更
     function editPostCategory(postId) {
       const post = posts.find(p => p.id === postId);
       if(!post) return;
@@ -383,7 +383,7 @@
       }
     }
 
-    // --- 1日まとめ (カレンダー表示) ---
+    // 1日まとめ カレンダー表示
     function renderCalendar() {
       const cellsContainer = document.getElementById('calendar-cells');
       cellsContainer.innerHTML = '';
@@ -393,12 +393,10 @@
       const firstDay = new Date(year, month, 1).getDay();
       const lastDate = new Date(year, month + 1, 0).getDate();
 
-      // 空白セル
       for(let i = 0; i < firstDay; i++) {
         cellsContainer.appendChild(document.createElement('div'));
       }
 
-      // 日付セル生成
       for(let date = 1; date <= lastDate; date++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
@@ -406,7 +404,6 @@
         
         if (date === now.getDate()) cell.classList.add('today');
 
-        // その日の投稿を取得
         const dayPosts = posts.filter(p => p.datetime.startsWith(dateStr));
         const photoPost = dayPosts.find(p => p.photo);
 
@@ -428,12 +425,12 @@
       const container = document.getElementById('day-summary-list');
       
       if(dayPosts.length === 0) {
-        container.innerHTML = '<div style="color:#888;">この日の記録はありません。</div>';
+        container.innerHTML = '<div style="color:#66786e; font-size:13px;">この日の記録はありません。</div>';
         return;
       }
 
       const dayTotal = dayPosts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-      let html = `<div style="font-weight:bold; margin-bottom:10px;">合計支出: ¥${dayTotal.toLocaleString()}</div>`;
+      let html = `<div style="font-weight:bold; color:#2d4a3e; margin-bottom:10px; font-size:14px;">合計支出: ¥${dayTotal.toLocaleString()}</div>`;
       html += dayPosts.map(post => `
         <div class="post-card">
           <div class="post-header"><span>${post.datetime}</span></div>
@@ -448,7 +445,7 @@
       container.innerHTML = html;
     }
 
-    // --- 予算分析描画 ---
+    // 予算分析
     function renderBudgetBreakdown() {
       const container = document.getElementById('category-breakdown');
       const totals = {};
@@ -458,19 +455,19 @@
       });
 
       if (Object.keys(totals).length === 0) {
-        container.innerHTML = '<div style="color:#888;">支出データがありません。</div>';
+        container.innerHTML = '<div style="color:#66786e; font-size:13px;">支出データがありません。</div>';
         return;
       }
 
       container.innerHTML = Object.keys(totals).map(cat => `
-        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #eee;">
-          <span>${escapeHtml(cat)}</span>
-          <span style="font-weight:bold;">¥${totals[cat].toLocaleString()}</span>
+        <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #e5ece7;">
+          <span style="font-size:13px;">${escapeHtml(cat)}</span>
+          <span style="font-weight:bold; color:#2d4a3e; font-size:14px;">¥${totals[cat].toLocaleString()}</span>
         </div>
       `).join('');
     }
 
-    // --- 設定画面機能 ---
+    // 設定処理
     function saveBaseBudget() {
       const val = Number(document.getElementById('setting-base-budget').value);
       if(!val) return;
@@ -484,7 +481,7 @@
       const list = document.getElementById('category-list');
       list.innerHTML = categories.map((cat, idx) => `
         <div class="cat-item">
-          <span>${escapeHtml(cat)}</span>
+          <span style="font-size:13px;">${escapeHtml(cat)}</span>
           <button class="btn-danger" onclick="removeCategory(${idx})">削除</button>
         </div>
       `).join('');
@@ -511,7 +508,7 @@
       }
     }
 
-    // データ出力 (JSON)
+    // バックアップ用データエクスポート
     function exportData() {
       const data = { baseBudget, categories, posts };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -525,7 +522,6 @@
       return (str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
 
-    // 初期化実行
     renderCategorySettings();
     render();
   </script>
