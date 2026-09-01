@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <title>旅日誌帳</title>
 
-  <!-- PWA全画面・テーマカラー設定（iOSステータスバーをブルー系に統一） -->
+  <!-- PWA全画面・テーマカラー設定 -->
   <meta name="theme-color" content="#b0c8d8">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
@@ -16,11 +16,12 @@
     * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
-      background-color: #b0c8d8; /* ペールブルー背景 */
+      background-color: #b0c8d8;
       color: #1a2b35;
       padding: 16px;
       padding-top: max(16px, env(safe-area-inset-top));
-      padding-bottom: calc(90px + env(safe-area-inset-bottom));
+      /* タブ位置の変更に合わせてコンテンツ下部余白を調整 */
+      padding-bottom: calc(130px + env(safe-area-inset-bottom));
     }
 
     /* ヘッダー */
@@ -122,13 +123,13 @@
     /* カテゴリー管理・設定 */
     .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2ebf1; }
 
-    /* 下部ナビゲーション */
+    /* 下部ナビゲーション（高さを引き上げて位置を上に調整） */
     .nav-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
       background: #b0c8d8; border-top: 1px solid #cbd9e3;
       display: flex; justify-content: space-around; align-items: center;
-      padding-top: 8px;
-      padding-bottom: max(16px, calc(8px + env(safe-area-inset-bottom)));
+      padding-top: 12px;
+      padding-bottom: max(55px, calc(45px + env(safe-area-inset-bottom)));
       z-index: 100;
     }
     .nav-item {
