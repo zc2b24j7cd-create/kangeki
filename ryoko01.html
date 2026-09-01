@@ -7,9 +7,8 @@
 
   <!-- PWA（全画面表示）用の設定 -->
   <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <meta name="apple-mobile-web-app-title" content="旅日誌帳">
-  <link rel="apple-touch-icon" href="icon.png">
 
   <style>
     /* 基本スタイル */
@@ -20,12 +19,12 @@
       -webkit-tap-highlight-color: transparent;
     }
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "Helvetica Neue", Arial, sans-serif;
       background-color: #f5f4ef;
       color: #333333;
       padding: 20px;
-      padding-bottom: 80px; /* 下部メニューの被り防止 */
-      padding-top: env(safe-area-inset-top); /* iPhone上部のノッチ対応 */
+      padding-bottom: 80px;
+      padding-top: max(20px, env(safe-area-inset-top));
     }
 
     /* ヘッダー */
@@ -40,7 +39,7 @@
     .title {
       font-size: 22px;
       font-weight: bold;
-      letter-spacing: 2px;
+      letter-spacing: 1px;
     }
     .date {
       font-size: 12px;
@@ -61,7 +60,7 @@
     }
     .summary-value {
       font-size: 15px;
-      font-weight: 500;
+      font-weight: 600;
     }
 
     /* 投稿フォーム */
@@ -88,6 +87,7 @@
       gap: 8px;
       margin-bottom: 10px;
     }
+    /* 写真ボタンの折り返しを防止 */
     .btn-light {
       background: #fafaf8;
       border: 1px solid #dcdbd5;
@@ -95,17 +95,20 @@
       padding: 8px 12px;
       font-size: 12px;
       color: #555;
+      cursor: pointer;
+      white-space: nowrap;
+      flex-shrink: 0;
     }
-    input[type="text"], input[type="datetime-local"] {
+    input[type="text"], input[type="number"] {
       border: 1px solid #dcdbd5;
       border-radius: 4px;
       padding: 8px;
       font-size: 12px;
       background: #fafaf8;
     }
-    .input-amount { width: 100px; }
-    .input-tag { flex: 1; }
-    .input-date { font-size: 11px; color: #666; }
+    .input-amount { width: 90px; flex-shrink: 0; }
+    .input-tag { flex: 1; min-width: 0; }
+    .input-date { font-size: 11px; color: #666; border: 1px solid #dcdbd5; border-radius: 4px; padding: 6px; background: #fafaf8; }
 
     .submit-container {
       display: flex;
@@ -121,9 +124,49 @@
       font-size: 13px;
       font-weight: bold;
       letter-spacing: 1px;
+      cursor: pointer;
     }
 
-    /* 記録エリア */
+    /* 記録リスト */
+    .posts-list {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+    .post-card {
+      background: #ffffff;
+      border: 1px solid #e0dfd9;
+      border-radius: 4px;
+      padding: 12px;
+    }
+    .post-header {
+      display: flex;
+      justify-content: space-between;
+      font-size: 11px;
+      color: #888;
+      margin-bottom: 6px;
+    }
+    .post-text {
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre-wrap;
+      margin-bottom: 8px;
+    }
+    .post-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+    }
+    .post-amount {
+      font-weight: bold;
+      color: #1e2a38;
+    }
+    .post-tag {
+      color: #666;
+      font-size: 11px;
+    }
+
     .empty-state {
       text-align: center;
       color: #888888;
@@ -153,6 +196,7 @@
       font-size: 11px;
       color: #777777;
       text-decoration: none;
+      cursor: pointer;
     }
     .nav-item.active {
       color: #111111;
@@ -172,14 +216,14 @@
   <!-- ヘッダー -->
   <div class="header">
     <div class="title">旅日誌帳</div>
-    <div class="date" id="current-date">2026/09/01</div>
+    <div class="date" id="current-header-date"></div>
   </div>
 
   <!-- サマリー -->
   <div class="summary-grid">
     <div>
       <div class="summary-label">基本予算</div>
-      <div class="summary-value">¥30,000</div>
+      <div class="summary-value" id="base-budget">¥30,000</div>
     </div>
     <div>
       <div class="summary-label">繰越</div>
@@ -187,39 +231,127 @@
     </div>
     <div>
       <div class="summary-label">今月の残り</div>
-      <div class="summary-value">¥30,000</div>
+      <div class="summary-value" id="remaining-budget">¥30,000</div>
     </div>
   </div>
 
   <!-- 投稿フォーム -->
   <div class="card">
-    <textarea placeholder="今日の記録を書く... #タグ もOK"></textarea>
+    <textarea id="post-input" placeholder="今日の記録を書く... #タグ もOK"></textarea>
     <div class="form-row">
-      <button class="btn-light">写真</button>
-      <input type="text" class="input-amount" placeholder="金額(円)">
-      <input type="text" class="input-tag" placeholder="タグ 半角空白区切り">
+      <button class="btn-light" type="button">写真</button>
+      <input type="number" id="amount-input" class="input-amount" placeholder="金額(円)">
+      <input type="text" id="tag-input" class="input-tag" placeholder="タグ 半角空白区切り">
     </div>
     <div class="submit-container">
-      <input type="text" class="input-date" id="datetime-picker" value="2026/09/01 21:33">
-      <button class="btn-submit">投稿する</button>
+      <input type="text" id="date-input" class="input-date">
+      <button class="btn-submit" id="submit-btn" type="button">投稿する</button>
     </div>
   </div>
 
   <!-- コンテンツ表示部 -->
-  <div class="empty-state">
-    まだ記録がありません。上のフォームから最初の1件を書いてみましょう。
+  <div id="posts-container" class="posts-list">
+    <div class="empty-state" id="empty-state">
+      まだ記録がありません。上のフォームから最初の1件を書いてみましょう。
+    </div>
   </div>
 
   <!-- ナビゲーション -->
   <div class="nav-bar">
-    <a href="#" class="nav-item active">
+    <div class="nav-item active">
       <div class="nav-dot"></div>
       タイムライン
-    </a>
-    <a href="#" class="nav-item">予算</a>
-    <a href="#" class="nav-item">1日まとめ</a>
-    <a href="#" class="nav-item">設定</a>
+    </div>
+    <div class="nav-item">予算</div>
+    <div class="nav-item">1日まとめ</div>
+    <div class="nav-item">設定</div>
   </div>
 
+  <script>
+    const BASE_BUDGET = 30000;
+    let posts = JSON.parse(localStorage.getItem('tabi_posts') || '[]');
+
+    const now = new Date();
+    const formatDate = (date) => {
+      const y = date.getFullYear();
+      const m = String(date.getMonth() + 1).padStart(2, '0');
+      const d = String(date.getDate()).padStart(2, '0');
+      return `${y}/${m}/${d}`;
+    };
+    const formatDateTime = (date) => {
+      const hours = String(date.getHours()).padStart(2, '0');
+      const mins = String(date.getMinutes()).padStart(2, '0');
+      return `${formatDate(date)} ${hours}:${mins}`;
+    };
+
+    document.getElementById('current-header-date').textContent = formatDate(now);
+    document.getElementById('date-input').value = formatDateTime(now);
+
+    function render() {
+      const container = document.getElementById('posts-container');
+      const totalSpent = posts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      const remaining = BASE_BUDGET - totalSpent;
+      document.getElementById('remaining-budget').textContent = `¥${remaining.toLocaleString()}`;
+
+      if (posts.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            まだ記録がありません。上のフォームから最初の1件を書いてみましょう。
+          </div>`;
+        return;
+      }
+
+      container.innerHTML = posts.map(post => `
+        <div class="post-card">
+          <div class="post-header">
+            <span>${post.datetime}</span>
+          </div>
+          <div class="post-text">${escapeHtml(post.text)}</div>
+          <div class="post-footer">
+            <span class="post-tag">${post.tag ? escapeHtml(post.tag) : ''}</span>
+            <span class="post-amount">${post.amount ? '¥' + Number(post.amount).toLocaleString() : ''}</span>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    function escapeHtml(str) {
+      return str.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+      });
+    }
+
+    document.getElementById('submit-btn').addEventListener('click', () => {
+      const textInput = document.getElementById('post-input');
+      const amountInput = document.getElementById('amount-input');
+      const tagInput = document.getElementById('tag-input');
+      const dateInput = document.getElementById('date-input');
+
+      if (!textInput.value.trim() && !amountInput.value) {
+        alert('テキストまたは金額を入力してください。');
+        return;
+      }
+
+      const newPost = {
+        id: Date.now(),
+        text: textInput.value,
+        amount: amountInput.value,
+        tag: tagInput.value,
+        datetime: dateInput.value
+      };
+
+      posts.unshift(newPost);
+      localStorage.setItem('tabi_posts', JSON.stringify(posts));
+
+      textInput.value = '';
+      amountInput.value = '';
+      tagInput.value = '';
+      dateInput.value = formatDateTime(new Date());
+
+      render();
+    });
+
+    render();
+  </script>
 </body>
 </html>
