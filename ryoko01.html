@@ -1,0 +1,829 @@
+<!DOCTYPE html>  
+<html lang="ja">  
+<head>  
+<meta charset="UTF-8">  
+<meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">  
+<title>旅日誌帳 — ライフログ家計簿</title>  
+<script src="https://cdn.tailwindcss.com"></script>  
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>  
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>  
+<link rel="preconnect" href="https://fonts.googleapis.com">  
+<link href="https://fonts.googleapis.com/css2?family=Shippori+Mincho:wght@400;500;600;700&family=Zen+Kaku+Gothic+New:wght@400;500;700;900&display=swap" rel="stylesheet">  
+<style>  
+  :root{  
+    --paper:#EEF0EA;  
+    --paper-deep:#E4E7DD;  
+    --ink:#23262B;  
+    --ink-soft:#5B6058;  
+    --line:#CBCFC0;  
+    --navy:#2E4756;  
+    --navy-deep:#1D2E38;  
+    --wine:#8B3A3A;  
+    --moss:#54725A;  
+    --sand:#B8912A;  
+    --card:#F7F8F3;  
+  }  
+  *{box-sizing:border-box;}  
+  html,body{height:100%;}  
+  body{  
+    background:var(--paper);  
+    color:var(--ink);  
+    font-family:'Zen Kaku Gothic New',sans-serif;  
+    -webkit-tap-highlight-color:transparent;  
+    overscroll-behavior-y:none;  
+  }  
+  .serif{font-family:'Shippori Mincho',serif;}  
+  .stitch{  
+    background-image:repeating-linear-gradient(to bottom, var(--line) 0 6px, transparent 6px 12px);  
+    width:2px;  
+  }  
+  .hairline{border-color:var(--line);}  
+  .tab-btn{color:var(--ink-soft);}  
+  .tab-btn.active{color:var(--navy-deep);}  
+  .tab-btn.active .tabdot{opacity:1;transform:scale(1);}  
+  .tabdot{opacity:0;transform:scale(0.3);transition:all .18s ease;}  
+  input,textarea,select{  
+    background:var(--card);  
+    border:1px solid var(--line);  
+    color:var(--ink);  
+  }  
+  input:focus,textarea:focus,select:focus{  
+    outline:2px solid var(--navy);  
+    outline-offset:1px;  
+  }  
+  .btn-primary{background:var(--navy-deep);color:var(--paper);}  
+  .btn-primary:active{background:var(--navy);}  
+  .btn-ghost{border:1px solid var(--line);color:var(--ink-soft);}  
+  .chip{  
+    border:1px solid var(--line);  
+    color:var(--ink-soft);  
+    font-size:.72rem;  
+  }  
+  .chip.on{background:var(--navy-deep);color:var(--paper);border-color:var(--navy-deep);}  
+  ::-webkit-scrollbar{width:0;height:0;}  
+  .toggle{width:42px;height:24px;border-radius:999px;background:var(--line);position:relative;transition:background .15s;flex-shrink:0;}  
+  .toggle.on{background:var(--navy-deep);}  
+  .toggle .knob{position:absolute;top:2px;left:2px;width:20px;height:20px;border-radius:50%;background:#fff;transition:left .15s;box-shadow:0 1px 2px rgba(0,0,0,.3);}  
+  .toggle.on .knob{left:20px;}  
+  .fade-in{animation:fadeIn .25s ease;}  
+  @keyframes fadeIn{from{opacity:0;transform:translateY(4px);}to{opacity:1;transform:translateY(0);}}  
+  #summaryExport.print-mode .no-print{display:none !important;}  
+  #summaryExport.print-mode{background:var(--card);}  
+  .amount-num{font-variant-numeric:tabular-nums;}  
+  dialog{border:none;padding:0;background:transparent;max-width:92vw;}  
+  dialog::backdrop{background:rgba(29,46,56,.55);}  
+</style>  
+</head>  
+<body class="flex flex-col h-screen">  
+  
+<!-- ===== ヘッダー ===== -->  
+<header class="shrink-0 border-b hairline px-4 pt-3 pb-2" style="background:var(--paper);">  
+  <div class="flex items-center justify-between">  
+    <h1 class="serif text-lg font-semibold tracking-wide" style="color:var(--navy-deep);">旅日誌帳</h1>  
+    <span id="todayLabel" class="text-xs" style="color:var(--ink-soft);"></span>  
+  </div>  
+  <div id="budgetStrip" class="mt-2 grid grid-cols-3 gap-2 text-center"></div>  
+</header>  
+  
+<!-- ===== メインコンテンツ ===== -->  
+<main class="flex-1 overflow-y-auto pb-4">  
+  
+  <!-- タブ① タイムライン -->  
+  <section id="tab-timeline" class="fade-in px-3 pt-3">  
+    <form id="postForm" class="border hairline rounded-sm p-3 mb-4" style="background:var(--card);">  
+      <textarea id="postText" rows="2" placeholder="今日の記録を書く… #タグ もOK" class="w-full text-sm p-2 rounded-sm resize-none"></textarea>  
+      <div id="imgPreviewWrap" class="hidden mt-2 relative inline-block">  
+        <img id="imgPreview" class="h-24 rounded-sm border hairline object-cover"/>  
+        <button type="button" id="imgRemoveBtn" class="absolute -top-2 -right-2 w-6 h-6 rounded-full text-xs" style="background:var(--wine);color:#fff;">×</button>  
+      </div>  
+      <div class="flex flex-wrap gap-2 mt-2 items-center">  
+        <label class="btn-ghost text-xs px-2 py-1.5 rounded-sm cursor-pointer">  
+          写真  
+          <input type="file" id="postImage" accept="image/*" class="hidden">  
+        </label>  
+        <input id="postAmount" type="number" inputmode="numeric" placeholder="金額(円)" class="text-sm px-2 py-1.5 rounded-sm w-28">  
+        <input id="postTags" type="text" placeholder="タグ 半角空白区切り" class="text-sm px-2 py-1.5 rounded-sm flex-1 min-w-[8rem]">  
+      </div>  
+      <div class="flex items-center justify-between mt-2">  
+        <input id="postDatetime" type="datetime-local" class="text-xs px-2 py-1.5 rounded-sm">  
+        <button type="submit" class="btn-primary text-sm px-4 py-1.5 rounded-sm">投稿する</button>  
+      </div>  
+    </form>  
+  
+    <div id="tagFilterBar" class="flex flex-wrap gap-1.5 mb-3"></div>  
+    <div id="timelineList" class="space-y-3"></div>  
+  </section>  
+  
+  <!-- タブ② 予算・年間グラフ -->  
+  <section id="tab-budget" class="fade-in px-3 pt-3 hidden">  
+    <div class="border hairline rounded-sm p-3 mb-4" style="background:var(--card);">  
+      <h2 class="serif text-base mb-2" style="color:var(--navy-deep);">予算設定</h2>  
+      <div class="grid grid-cols-2 gap-2 text-xs">  
+        <label class="flex flex-col gap-1">基本月予算(円)  
+          <input id="setBaseBudget" type="number" class="px-2 py-1.5 rounded-sm">  
+        </label>  
+        <label class="flex flex-col gap-1">繰り越し起算月  
+          <input id="setStartMonth" type="month" class="px-2 py-1.5 rounded-sm">  
+        </label>  
+        <label class="flex flex-col gap-1 col-span-2">起算月の繰り越し初期値(円)  
+          <input id="setStartCarryover" type="number" class="px-2 py-1.5 rounded-sm">  
+        </label>  
+      </div>  
+      <button id="saveBudgetSettings" class="btn-primary text-xs px-3 py-1.5 rounded-sm mt-2">設定を保存</button>  
+    </div>  
+  
+    <div class="border hairline rounded-sm p-3 mb-4" style="background:var(--card);">  
+      <div class="flex items-center justify-between mb-2">  
+        <h2 class="serif text-base" style="color:var(--navy-deep);">対象年</h2>  
+        <input id="chartYear" type="number" class="px-2 py-1 rounded-sm w-24 text-sm">  
+      </div>  
+      <p class="text-xs mb-1" style="color:var(--ink-soft);">月別支出</p>  
+      <canvas id="barChart" height="170"></canvas>  
+      <p class="text-xs mt-4 mb-1" style="color:var(--ink-soft);">タグ別支出割合</p>  
+      <canvas id="pieChart" height="220"></canvas>  
+    </div>  
+  
+    <div id="monthTable" class="border hairline rounded-sm p-3 text-xs" style="background:var(--card);"></div>  
+  </section>  
+  
+  <!-- タブ③ 1日まとめ -->  
+  <section id="tab-summary" class="fade-in px-3 pt-3 hidden">  
+    <div class="flex items-center gap-2 mb-3">  
+      <input id="summaryDate" type="date" class="px-2 py-1.5 rounded-sm text-sm">  
+      <label class="flex items-center gap-1.5 text-xs ml-auto">金額を隠す  
+        <span id="toggleAmount" class="toggle"><span class="knob"></span></span>  
+      </label>  
+      <label class="flex items-center gap-1.5 text-xs">写真を枠化  
+        <span id="toggleDummy" class="toggle"><span class="knob"></span></span>  
+      </label>  
+    </div>  
+  
+    <div id="summaryExport" class="border hairline rounded-sm p-3 mb-3" style="background:var(--card);">  
+      <h2 id="summaryTitle" class="serif text-lg mb-3 text-center" style="color:var(--navy-deep);"></h2>  
+      <div id="summaryList" class="space-y-0"></div>  
+    </div>  
+  
+    <div class="flex gap-2 no-export">  
+      <button id="exportPng" class="btn-ghost text-xs px-3 py-2 rounded-sm flex-1">PNG保存</button>  
+      <button id="exportPdf" class="btn-ghost text-xs px-3 py-2 rounded-sm flex-1">PDF保存</button>  
+    </div>  
+  </section>  
+  
+  <!-- タブ④ 設定 -->  
+  <section id="tab-settings" class="fade-in px-3 pt-3 hidden">  
+    <div class="border hairline rounded-sm p-3 mb-4" style="background:var(--card);">  
+      <h2 class="serif text-base mb-2" style="color:var(--navy-deep);">バックアップ・引き継ぎ</h2>  
+      <p class="text-xs mb-3" style="color:var(--ink-soft);">投稿・画像・タグ・予算設定をすべて1つのJSONファイルに書き出します。機種変更前に必ず保存してください。</p>  
+      <button id="exportJsonBtn" class="btn-primary text-xs px-3 py-2 rounded-sm w-full mb-3">バックアップ出力（JSONエクスポート）</button>  
+      <label class="btn-ghost text-xs px-3 py-2 rounded-sm w-full block text-center cursor-pointer">  
+        データ復元（JSONインポート）  
+        <input type="file" id="importJsonInput" accept="application/json" class="hidden">  
+      </label>  
+      <p id="importStatus" class="text-xs mt-2" style="color:var(--moss);"></p>  
+    </div>  
+    <div class="border hairline rounded-sm p-3 text-xs" style="background:var(--card); color:var(--ink-soft);">  
+      <p>データはすべて端末内（IndexedDB）に保存され、外部サーバーへは一切送信されません。</p>  
+    </div>  
+  </section>  
+  
+</main>  
+  
+<!-- ===== 編集ダイアログ ===== -->  
+<dialog id="editDialog" class="w-full max-w-md rounded-sm">  
+  <form id="editForm" class="border hairline p-3" style="background:var(--card);">  
+    <h3 class="serif text-base mb-2" style="color:var(--navy-deep);">投稿を編集</h3>  
+    <textarea id="editText" rows="2" class="w-full text-sm p-2 rounded-sm mb-2 resize-none"></textarea>  
+    <div class="grid grid-cols-2 gap-2 mb-2">  
+      <input id="editAmount" type="number" placeholder="金額" class="text-sm px-2 py-1.5 rounded-sm">  
+      <input id="editDatetime" type="datetime-local" class="text-sm px-2 py-1.5 rounded-sm">  
+    </div>  
+    <input id="editTags" type="text" placeholder="タグ" class="text-sm px-2 py-1.5 rounded-sm w-full mb-3">  
+    <div class="flex justify-between gap-2">  
+      <button type="button" id="deletePostBtn" class="text-xs px-3 py-1.5 rounded-sm" style="color:var(--wine);border:1px solid var(--wine);">この投稿を削除</button>  
+      <div class="flex gap-2">  
+        <button type="button" id="closeEditBtn" class="btn-ghost text-xs px-3 py-1.5 rounded-sm">閉じる</button>  
+        <button type="submit" class="btn-primary text-xs px-3 py-1.5 rounded-sm">保存</button>  
+      </div>  
+    </div>  
+  </form>  
+</dialog>  
+  
+<!-- ===== 下部タブバー ===== -->  
+<nav class="shrink-0 border-t hairline flex" style="background:var(--paper);">  
+  <button data-tab="timeline" class="tab-btn active flex-1 flex flex-col items-center py-2 text-[11px]">  
+    <span class="tabdot w-1 h-1 rounded-full mb-0.5" style="background:var(--navy-deep);"></span>タイムライン  
+  </button>  
+  <button data-tab="budget" class="tab-btn flex-1 flex flex-col items-center py-2 text-[11px]">  
+    <span class="tabdot w-1 h-1 rounded-full mb-0.5" style="background:var(--navy-deep);"></span>予算  
+  </button>  
+  <button data-tab="summary" class="tab-btn flex-1 flex flex-col items-center py-2 text-[11px]">  
+    <span class="tabdot w-1 h-1 rounded-full mb-0.5" style="background:var(--navy-deep);"></span>1日まとめ  
+  </button>  
+  <button data-tab="settings" class="tab-btn flex-1 flex flex-col items-center py-2 text-[11px]">  
+    <span class="tabdot w-1 h-1 rounded-full mb-0.5" style="background:var(--navy-deep);"></span>設定  
+  </button>  
+</nav>  
+  
+<script>  
+(function(){  
+"use strict";  
+  
+/* ================= IndexedDB ================= */  
+const DB_NAME = "lifelog_db", DB_VERSION = 1;  
+let db;  
+function openDB(){  
+  return new Promise((resolve,reject)=>{  
+    const req = indexedDB.open(DB_NAME, DB_VERSION);  
+    req.onupgradeneeded = (e)=>{  
+      const d = e.target.result;  
+      if(!d.objectStoreNames.contains("posts")){  
+        const s = d.createObjectStore("posts",{keyPath:"id",autoIncrement:true});  
+        s.createIndex("datetime","datetime");  
+      }  
+      if(!d.objectStoreNames.contains("images")){  
+        d.createObjectStore("images",{keyPath:"id",autoIncrement:true});  
+      }  
+      if(!d.objectStoreNames.contains("settings")){  
+        d.createObjectStore("settings",{keyPath:"key"});  
+      }  
+      if(!d.objectStoreNames.contains("daySettings")){  
+        d.createObjectStore("daySettings",{keyPath:"date"});  
+      }  
+    };  
+    req.onsuccess = ()=>{ db = req.result; resolve(db); };  
+    req.onerror = ()=> reject(req.error);  
+  });  
+}  
+function tx(store, mode){ return db.transaction(store, mode).objectStore(store); }  
+function reqP(r){ return new Promise((res,rej)=>{ r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error); }); }  
+const dbAdd = (store, val)=> reqP(tx(store,"readwrite").add(val));  
+const dbPut = (store, val)=> reqP(tx(store,"readwrite").put(val));  
+const dbGet = (store, key)=> reqP(tx(store,"readonly").get(key));  
+const dbDelete = (store, key)=> reqP(tx(store,"readwrite").delete(key));  
+const dbGetAll = (store)=> reqP(tx(store,"readonly").getAll());  
+function dbClear(store){ return reqP(tx(store,"readwrite").clear()); }  
+  
+/* ================= ユーティリティ ================= */  
+const yen = (n)=> "¥" + Math.round(n).toLocaleString("ja-JP");  
+function pad2(n){ return String(n).padStart(2,"0"); }  
+function nowLocalInput(){  
+  const d = new Date();  
+  return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;  
+}  
+function ymOf(datetimeStr){ return datetimeStr.slice(0,7); } // YYYY-MM  
+function dOf(datetimeStr){ return datetimeStr.slice(0,10); } // YYYY-MM-DD  
+function nextYM(ym){  
+  let [y,m] = ym.split("-").map(Number);  
+  m++; if(m>12){ m=1; y++; }  
+  return `${y}-${pad2(m)}`;  
+}  
+function compareYM(a,b){ return a<b?-1:(a>b?1:0); }  
+function extractTags(text, tagsField){  
+  const set = new Set();  
+  (text.match(/#[^\s#　]+/g)||[]).forEach(t=>set.add(t.replace(/^#/,"")));  
+  (tagsField||"").split(/[\s　]+/).forEach(t=>{  
+    t = t.replace(/^#/,"").trim();  
+    if(t) set.add(t);  
+  });  
+  return Array.from(set);  
+}  
+const imgURLCache = new Map();  
+async function getImageURL(imageId){  
+  if(imageId==null) return null;  
+  if(imgURLCache.has(imageId)) return imgURLCache.get(imageId);  
+  const rec = await dbGet("images", imageId);  
+  if(!rec) return null;  
+  const url = URL.createObjectURL(rec.blob);  
+  imgURLCache.set(imageId, url);  
+  return url;  
+}  
+  
+/* ================= 設定（予算）================= */  
+let settings = { baseBudget:30000, startMonth: null, startCarryover:0 };  
+async function loadSettings(){  
+  const rows = await dbGetAll("settings");  
+  rows.forEach(r=>{ settings[r.key] = r.value; });  
+  if(!settings.startMonth){  
+    const today = new Date();  
+    settings.startMonth = `${today.getFullYear()}-${pad2(today.getMonth()+1)}`;  
+    await dbPut("settings",{key:"startMonth",value:settings.startMonth});  
+  }  
+}  
+async function saveSetting(key,value){  
+  settings[key]=value;  
+  await dbPut("settings",{key,value});  
+}  
+async function spendingForMonth(ym){  
+  const posts = await dbGetAll("posts");  
+  return posts.filter(p=> p.amount!=null && ymOf(p.datetime)===ym)  
+              .reduce((s,p)=> s+Number(p.amount), 0);  
+}  
+async function carryoverInto(targetYM){  
+  const start = settings.startMonth;  
+  if(compareYM(targetYM,start)<=0){  
+    return targetYM===start ? Number(settings.startCarryover)||0 : 0;  
+  }  
+  let carry = Number(settings.startCarryover)||0;  
+  let ym = start;  
+  while(compareYM(ym, targetYM) < 0){  
+    const budget = Number(settings.baseBudget) + carry;  
+    const spend = await spendingForMonth(ym);  
+    carry = budget - spend;  
+    ym = nextYM(ym);  
+  }  
+  return carry;  
+}  
+async function monthFigures(ym){  
+  const carry = await carryoverInto(ym);  
+  const budget = Number(settings.baseBudget) + carry;  
+  const spend = await spendingForMonth(ym);  
+  return { carry, budget, spend, remain: budget - spend };  
+}  
+  
+/* ================= ヘッダー ================= */  
+async function renderHeader(){  
+  const today = new Date();  
+  document.getElementById("todayLabel").textContent =  
+    `${today.getFullYear()}/${pad2(today.getMonth()+1)}/${pad2(today.getDate())}`;  
+  const ym = `${today.getFullYear()}-${pad2(today.getMonth()+1)}`;  
+  const f = await monthFigures(ym);  
+  const strip = document.getElementById("budgetStrip");  
+  const cell = (label,val,color)=>`  
+    <div class="border-t pt-1" style="border-color:var(--line);">  
+      <div class="text-[10px]" style="color:var(--ink-soft);">${label}</div>  
+      <div class="serif text-sm amount-num" style="color:${color};">${yen(val)}</div>  
+    </div>`;  
+  strip.innerHTML =  
+    cell("基本予算", Number(settings.baseBudget), "var(--ink)") +  
+    cell("繰越", f.carry, f.carry>=0 ? "var(--moss)" : "var(--wine)") +  
+    cell("今月の残り", f.remain, f.remain>=0 ? "var(--moss)" : "var(--wine)");  
+}  
+  
+/* ================= タブ制御 ================= */  
+const tabs = ["timeline","budget","summary","settings"];  
+function showTab(name){  
+  tabs.forEach(t=>{  
+    document.getElementById("tab-"+t).classList.toggle("hidden", t!==name);  
+  });  
+  document.querySelectorAll(".tab-btn").forEach(b=>{  
+    b.classList.toggle("active", b.dataset.tab===name);  
+  });  
+  if(name==="budget") renderBudgetTab();  
+  if(name==="summary") renderSummaryTab();  
+}  
+document.querySelectorAll(".tab-btn").forEach(b=>{  
+  b.addEventListener("click", ()=> showTab(b.dataset.tab));  
+});  
+  
+/* ================= タイムライン ================= */  
+let activeTagFilter = null;  
+let pendingImageBlob = null;  
+  
+document.getElementById("postDatetime").value = nowLocalInput();  
+  
+document.getElementById("postImage").addEventListener("change",(e)=>{  
+  const file = e.target.files[0];  
+  if(!file) return;  
+  pendingImageBlob = file;  
+  const url = URL.createObjectURL(file);  
+  document.getElementById("imgPreview").src = url;  
+  document.getElementById("imgPreviewWrap").classList.remove("hidden");  
+});  
+document.getElementById("imgRemoveBtn").addEventListener("click",()=>{  
+  pendingImageBlob = null;  
+  document.getElementById("postImage").value = "";  
+  document.getElementById("imgPreviewWrap").classList.add("hidden");  
+});  
+  
+document.getElementById("postForm").addEventListener("submit", async (e)=>{  
+  e.preventDefault();  
+  const text = document.getElementById("postText").value.trim();  
+  const amountRaw = document.getElementById("postAmount").value;  
+  const amount = amountRaw==="" ? null : Number(amountRaw);  
+  const tagsField = document.getElementById("postTags").value;  
+  const dt = document.getElementById("postDatetime").value || nowLocalInput();  
+  if(!text && !pendingImageBlob){ alert("本文か写真のどちらかを入力してください。"); return; }  
+  
+  let imageId = null;  
+  if(pendingImageBlob){  
+    imageId = await dbAdd("images", { blob: pendingImageBlob });  
+  }  
+  const tags = extractTags(text, tagsField);  
+  await dbAdd("posts", { datetime: dt, text, amount, tags, imageId });  
+  
+  document.getElementById("postForm").reset();  
+  document.getElementById("postDatetime").value = nowLocalInput();  
+  pendingImageBlob = null;  
+  document.getElementById("imgPreviewWrap").classList.add("hidden");  
+  
+  await renderHeader();  
+  await renderTimeline();  
+});  
+  
+async function renderTimeline(){  
+  const posts = (await dbGetAll("posts")).sort((a,b)=> b.datetime.localeCompare(a.datetime));  
+  const allTags = Array.from(new Set(posts.flatMap(p=>p.tags||[])));  
+  const bar = document.getElementById("tagFilterBar");  
+  bar.innerHTML = allTags.map(t=>  
+    `<button data-tag="${t}" class="chip px-2 py-1 rounded-full ${activeTagFilter===t?"on":""}">#${t}</button>`  
+  ).join("");  
+  bar.querySelectorAll("button").forEach(b=>{  
+    b.addEventListener("click", ()=>{  
+      activeTagFilter = activeTagFilter===b.dataset.tag ? null : b.dataset.tag;  
+      renderTimeline();  
+    });  
+  });  
+  
+  const list = document.getElementById("timelineList");  
+  const shown = activeTagFilter ? posts.filter(p=> (p.tags||[]).includes(activeTagFilter)) : posts;  
+  if(shown.length===0){  
+    list.innerHTML = `<p class="text-xs text-center py-10" style="color:var(--ink-soft);">まだ記録がありません。上のフォームから最初の1件を書いてみましょう。</p>`;  
+    return;  
+  }  
+  list.innerHTML = "";  
+  for(const p of shown){  
+    const card = document.createElement("div");  
+    card.className = "flex gap-2";  
+    let imgHTML = "";  
+    if(p.imageId!=null){  
+      const url = await getImageURL(p.imageId);  
+      imgHTML = `<img src="${url}" class="w-full rounded-sm mt-2 object-cover max-h-64">`;  
+    }  
+    const d = new Date(p.datetime);  
+    const dateLabel = `${d.getFullYear()}/${pad2(d.getMonth()+1)}/${pad2(d.getDate())} ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;  
+    const tagsHTML = (p.tags||[]).map(t=>`<span class="chip px-1.5 py-0.5 rounded-full mr-1">#${t}</span>`).join("");  
+    card.innerHTML = `  
+      <div class="stitch mt-1 rounded"></div>  
+      <div class="flex-1 border-b hairline pb-3">  
+        <div class="flex items-start justify-between">  
+          <span class="text-[11px]" style="color:var(--ink-soft);">${dateLabel}</span>  
+          <button class="edit-btn text-[11px] underline" style="color:var(--ink-soft);">編集</button>  
+        </div>  
+        ${p.text ? `<p class="text-sm mt-1 whitespace-pre-wrap">${escapeHTML(p.text)}</p>` : ""}  
+        ${imgHTML}  
+        <div class="flex items-center justify-between mt-1.5">  
+          <div>${tagsHTML}</div>  
+          ${p.amount!=null ? `<span class="serif text-sm amount-num" style="color:var(--wine);">${yen(p.amount)}</span>` : ""}  
+        </div>  
+      </div>`;  
+    card.querySelector(".edit-btn").addEventListener("click", ()=> openEditDialog(p));  
+    list.appendChild(card);  
+  }  
+}  
+function escapeHTML(s){  
+  return s.replace(/[&<>"']/g, m=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[m]));  
+}  
+  
+/* ---- 編集ダイアログ ---- */  
+let editingPost = null;  
+function openEditDialog(p){  
+  editingPost = p;  
+  document.getElementById("editText").value = p.text||"";  
+  document.getElementById("editAmount").value = p.amount==null? "" : p.amount;  
+  document.getElementById("editDatetime").value = p.datetime;  
+  document.getElementById("editTags").value = (p.tags||[]).join(" ");  
+  document.getElementById("editDialog").showModal();  
+}  
+document.getElementById("closeEditBtn").addEventListener("click", ()=> document.getElementById("editDialog").close());  
+document.getElementById("editForm").addEventListener("submit", async (e)=>{  
+  e.preventDefault();  
+  if(!editingPost) return;  
+  const text = document.getElementById("editText").value.trim();  
+  const amountRaw = document.getElementById("editAmount").value;  
+  editingPost.amount = amountRaw==="" ? null : Number(amountRaw);  
+  editingPost.datetime = document.getElementById("editDatetime").value;  
+  editingPost.tags = extractTags(text, document.getElementById("editTags").value);  
+  editingPost.text = text;  
+  await dbPut("posts", editingPost);  
+  document.getElementById("editDialog").close();  
+  editingPost = null;  
+  await renderHeader(); await renderTimeline();  
+});  
+document.getElementById("deletePostBtn").addEventListener("click", async ()=>{  
+  if(!editingPost) return;  
+  if(!confirm("この投稿を削除しますか？")) return;  
+  await dbDelete("posts", editingPost.id);  
+  document.getElementById("editDialog").close();  
+  editingPost = null;  
+  await renderHeader(); await renderTimeline();  
+});  
+  
+/* ================= 予算・年間グラフ タブ ================= */  
+let barChartInst, pieChartInst;  
+async function renderBudgetTab(){  
+  document.getElementById("setBaseBudget").value = settings.baseBudget;  
+  document.getElementById("setStartMonth").value = settings.startMonth;  
+  document.getElementById("setStartCarryover").value = settings.startCarryover;  
+  const yearInput = document.getElementById("chartYear");  
+  if(!yearInput.value) yearInput.value = new Date().getFullYear();  
+  await drawCharts(Number(yearInput.value));  
+}  
+document.getElementById("saveBudgetSettings").addEventListener("click", async ()=>{  
+  await saveSetting("baseBudget", Number(document.getElementById("setBaseBudget").value)||0);  
+  await saveSetting("startMonth", document.getElementById("setStartMonth").value);  
+  await saveSetting("startCarryover", Number(document.getElementById("setStartCarryover").value)||0);  
+  await renderHeader();  
+  await renderBudgetTab();  
+});  
+document.getElementById("chartYear").addEventListener("change", (e)=> drawCharts(Number(e.target.value)));  
+  
+async function drawCharts(year){  
+  const months = Array.from({length:12}, (_,i)=> `${year}-${pad2(i+1)}`);  
+  const spends = [];  
+  const figures = [];  
+  for(const ym of months){  
+    spends.push(await spendingForMonth(ym));  
+    figures.push(await monthFigures(ym));  
+  }  
+  const ctxBar = document.getElementById("barChart").getContext("2d");  
+  if(barChartInst) barChartInst.destroy();  
+  barChartInst = new Chart(ctxBar, {  
+    type:"bar",  
+    data:{ labels: months.map(m=>m.slice(5)+"月"),  
+      datasets:[{ label:"支出", data: spends, backgroundColor:"#2E4756" }]},  
+    options:{ plugins:{legend:{display:false}}, scales:{y:{beginAtZero:true}} }  
+  });  
+  
+  const posts = await dbGetAll("posts");  
+  const tagSums = {};  
+  posts.filter(p=> p.amount!=null && ymOf(p.datetime).startsWith(String(year)))  
+       .forEach(p=>{  
+         const tags = (p.tags&&p.tags.length) ? p.tags : ["未分類"];  
+         tags.forEach(t=>{ tagSums[t] = (tagSums[t]||0) + Number(p.amount)/tags.length; });  
+       });  
+  const palette = ["#2E4756","#8B3A3A","#54725A","#B8912A","#5B6058","#3E5F73","#A85C3A","#6E8C5F","#7A5C8B","#B87A3A"];  
+  const tagLabels = Object.keys(tagSums);  
+  const ctxPie = document.getElementById("pieChart").getContext("2d");  
+  if(pieChartInst) pieChartInst.destroy();  
+  pieChartInst = new Chart(ctxPie, {  
+    type:"pie",  
+    data:{ labels: tagLabels, datasets:[{ data: tagLabels.map(t=>tagSums[t]), backgroundColor: tagLabels.map((_,i)=>palette[i%palette.length]) }]},  
+    options:{ plugins:{legend:{position:"bottom", labels:{boxWidth:12,font:{size:10}}}} }  
+  });  
+  
+  const tbl = document.getElementById("monthTable");  
+  tbl.innerHTML = `<table class="w-full"><thead><tr class="text-left" style="color:var(--ink-soft);">  
+    <th class="py-1">月</th><th>実質予算</th><th>支出</th><th>残額</th></tr></thead><tbody>  
+    ${months.map((m,i)=>`<tr class="border-t hairline">  
+      <td class="py-1">${m.slice(5)}月</td>  
+      <td class="amount-num">${yen(figures[i].budget)}</td>  
+      <td class="amount-num">${yen(figures[i].spend)}</td>  
+      <td class="amount-num" style="color:${figures[i].remain>=0?'var(--moss)':'var(--wine)'}">${yen(figures[i].remain)}</td>  
+    </tr>`).join("")}</tbody></table>`;  
+}  
+  
+/* ================= 1日まとめタブ ================= */  
+let summaryPrefs = { hideAmount:false, dummyPhoto:false };  
+document.getElementById("summaryDate").addEventListener("change", renderSummaryTab);  
+document.getElementById("toggleAmount").addEventListener("click", ()=>{  
+  summaryPrefs.hideAmount = !summaryPrefs.hideAmount;  
+  document.getElementById("toggleAmount").classList.toggle("on", summaryPrefs.hideAmount);  
+  renderSummaryList();  
+});  
+document.getElementById("toggleDummy").addEventListener("click", ()=>{  
+  summaryPrefs.dummyPhoto = !summaryPrefs.dummyPhoto;  
+  document.getElementById("toggleDummy").classList.toggle("on", summaryPrefs.dummyPhoto);  
+  renderSummaryList();  
+});  
+  
+let currentDaySettings = null; // {date, hiddenPostIds, insertedLogs, order}  
+let currentDayPosts = [];  
+  
+async function renderSummaryTab(){  
+  const dateInput = document.getElementById("summaryDate");  
+  if(!dateInput.value){  
+    const t = new Date();  
+    dateInput.value = `${t.getFullYear()}-${pad2(t.getMonth()+1)}-${pad2(t.getDate())}`;  
+  }  
+  const date = dateInput.value;  
+  const posts = (await dbGetAll("posts")).filter(p=> dOf(p.datetime)===date)  
+                                          .sort((a,b)=> a.datetime.localeCompare(b.datetime));  
+  currentDayPosts = posts;  
+  let ds = await dbGet("daySettings", date);  
+  if(!ds){  
+    ds = { date, hiddenPostIds:[], insertedLogs:[], order: posts.map(p=>({type:"post", id:p.id})) };  
+  } else {  
+    // 新しい投稿がorderに無ければ追加  
+    const known = new Set(ds.order.filter(o=>o.type==="post").map(o=>o.id));  
+    posts.forEach(p=>{ if(!known.has(p.id)) ds.order.push({type:"post", id:p.id}); });  
+    // 削除された投稿をorderから除去  
+    const existing = new Set(posts.map(p=>p.id));  
+    ds.order = ds.order.filter(o=> o.type!=="post" || existing.has(o.id));  
+  }  
+  currentDaySettings = ds;  
+  document.getElementById("summaryTitle").textContent = date.replace(/-/g,"/");  
+  document.getElementById("toggleAmount").classList.toggle("on", summaryPrefs.hideAmount);  
+  document.getElementById("toggleDummy").classList.toggle("on", summaryPrefs.dummyPhoto);  
+  await renderSummaryList();  
+}  
+  
+async function persistDaySettings(){  
+  await dbPut("daySettings", currentDaySettings);  
+}  
+  
+async function renderSummaryList(){  
+  const wrap = document.getElementById("summaryList");  
+  const ds = currentDaySettings;  
+  if(!ds){ wrap.innerHTML=""; return; }  
+  wrap.innerHTML = "";  
+  for(let i=0;i<ds.order.length;i++){  
+    const item = ds.order[i];  
+    const row = document.createElement("div");  
+    row.className = "border-t hairline py-2";  
+    if(item.type==="post"){  
+      const p = currentDayPosts.find(x=>x.id===item.id);  
+      if(!p) continue;  
+      const hidden = ds.hiddenPostIds.includes(p.id);  
+      let imgHTML = "";  
+      if(p.imageId!=null){  
+        if(summaryPrefs.dummyPhoto){  
+          imgHTML = `<div class="w-full h-40 rounded-sm mt-2 flex items-center justify-center text-xs" style="background:repeating-linear-gradient(45deg,var(--paper-deep),var(--paper-deep) 8px,var(--card) 8px,var(--card) 16px); color:var(--ink-soft);">写真（非表示）</div>`;  
+        } else {  
+          const url = await getImageURL(p.imageId);  
+          imgHTML = `<img src="${url}" class="w-full rounded-sm mt-2 object-cover max-h-56">`;  
+        }  
+      }  
+      const d = new Date(p.datetime);  
+      row.innerHTML = `  
+        <div class="flex items-start gap-2 ${hidden?'opacity-35':''}">  
+          <label class="no-print flex items-center gap-1 text-[10px] mt-0.5" style="color:var(--ink-soft);">  
+            <input type="checkbox" class="hide-cb" ${hidden?'':'checked'}> 掲載  
+          </label>  
+          <div class="flex-1">  
+            <div class="flex justify-between text-[11px]" style="color:var(--ink-soft);">  
+              <span>${pad2(d.getHours())}:${pad2(d.getMinutes())}</span>  
+              ${(!summaryPrefs.hideAmount && p.amount!=null) ? `<span class="serif amount-num" style="color:var(--wine);">${yen(p.amount)}</span>` : ""}  
+            </div>  
+            ${p.text ? `<p class="text-sm mt-0.5 whitespace-pre-wrap">${escapeHTML(p.text)}</p>` : ""}  
+            ${imgHTML}  
+          </div>  
+          <div class="no-print flex flex-col gap-1">  
+            <button class="mv-up text-[11px]" style="color:var(--ink-soft);">↑</button>  
+            <button class="mv-down text-[11px]" style="color:var(--ink-soft);">↓</button>  
+          </div>  
+        </div>  
+        <button class="ins-btn no-print text-[10px] mt-1.5 w-full text-center" style="color:var(--sand);">＋ ここに割り込みログを追加</button>  
+      `;  
+      row.querySelector(".hide-cb").addEventListener("change",(e)=>{  
+        if(e.target.checked) ds.hiddenPostIds = ds.hiddenPostIds.filter(id=>id!==p.id);  
+        else ds.hiddenPostIds.push(p.id);  
+        persistDaySettings(); renderSummaryList();  
+      });  
+    } else {  
+      // insertedLog  
+      const log = ds.insertedLogs.find(l=>l.id===item.id);  
+      if(!log) continue;  
+      row.innerHTML = `  
+        <div class="flex items-start gap-2" style="background:var(--paper-deep);border-radius:2px;padding:6px;">  
+          <div class="flex-1">  
+            <div class="text-[10px] mb-0.5" style="color:var(--sand);">割り込みログ</div>  
+            <textarea class="ins-text w-full text-sm p-1 rounded-sm resize-none" rows="2">${escapeHTML(log.text)}</textarea>  
+          </div>  
+          <div class="no-print flex flex-col gap-1">  
+            <button class="mv-up text-[11px]" style="color:var(--ink-soft);">↑</button>  
+            <button class="mv-down text-[11px]" style="color:var(--ink-soft);">↓</button>  
+            <button class="del-ins text-[11px]" style="color:var(--wine);">✕</button>  
+          </div>  
+        </div>  
+        <button class="ins-btn no-print text-[10px] mt-1.5 w-full text-center" style="color:var(--sand);">＋ ここに割り込みログを追加</button>  
+      `;  
+      row.querySelector(".ins-text").addEventListener("change",(e)=>{  
+        log.text = e.target.value; persistDaySettings();  
+      });  
+      row.querySelector(".del-ins").addEventListener("click", ()=>{  
+        ds.order.splice(i,1);  
+        ds.insertedLogs = ds.insertedLogs.filter(l=>l.id!==log.id);  
+        persistDaySettings(); renderSummaryList();  
+      });  
+    }  
+    row.querySelector(".mv-up").addEventListener("click", ()=>{  
+      if(i===0) return;  
+      [ds.order[i-1],ds.order[i]] = [ds.order[i],ds.order[i-1]];  
+      persistDaySettings(); renderSummaryList();  
+    });  
+    row.querySelector(".mv-down").addEventListener("click", ()=>{  
+      if(i===ds.order.length-1) return;  
+      [ds.order[i+1],ds.order[i]] = [ds.order[i],ds.order[i+1]];  
+      persistDaySettings(); renderSummaryList();  
+    });  
+    row.querySelector(".ins-btn").addEventListener("click", ()=>{  
+      const text = prompt("割り込みログの内容（例：移動：ホテル→駅）");  
+      if(text==null || text.trim()==="") return;  
+      const newId = "ins_" + Date.now();  
+      ds.insertedLogs.push({ id:newId, text: text.trim() });  
+      ds.order.splice(i+1, 0, { type:"insert", id:newId });  
+      persistDaySettings(); renderSummaryList();  
+    });  
+    wrap.appendChild(row);  
+  }  
+  if(ds.order.length===0){  
+    wrap.innerHTML = `<p class="text-xs text-center py-8" style="color:var(--ink-soft);">この日の投稿はありません。</p>`;  
+  }  
+}  
+  
+document.getElementById("exportPng").addEventListener("click", async ()=>{  
+  const el = document.getElementById("summaryExport");  
+  el.classList.add("print-mode");  
+  const canvas = await html2canvas(el, { backgroundColor:"#F7F8F3", scale:2 });  
+  el.classList.remove("print-mode");  
+  canvas.toBlob((blob)=>{  
+    const a = document.createElement("a");  
+    a.href = URL.createObjectURL(blob);  
+    a.download = `daysummary_${document.getElementById("summaryDate").value}.png`;  
+    a.click();  
+  });  
+});  
+document.getElementById("exportPdf").addEventListener("click", async ()=>{  
+  const el = document.getElementById("summaryExport");  
+  el.classList.add("print-mode");  
+  const canvas = await html2canvas(el, { backgroundColor:"#F7F8F3", scale:2 });  
+  el.classList.remove("print-mode");  
+  const { jsPDF } = window.jspdf;  
+  const imgData = canvas.toDataURL("image/png");  
+  const pdf = new jsPDF({ unit:"pt", format:[canvas.width/2, canvas.height/2] });  
+  pdf.addImage(imgData, "PNG", 0, 0, canvas.width/2, canvas.height/2);  
+  pdf.save(`daysummary_${document.getElementById("summaryDate").value}.pdf`);  
+});  
+  
+/* ================= 設定タブ：バックアップ / 復元 ================= */  
+function blobToDataURL(blob){  
+  return new Promise((res,rej)=>{  
+    const r = new FileReader();  
+    r.onload = ()=> res(r.result);  
+    r.onerror = rej;  
+    r.readAsDataURL(blob);  
+  });  
+}  
+document.getElementById("exportJsonBtn").addEventListener("click", async ()=>{  
+  const posts = await dbGetAll("posts");  
+  const images = await dbGetAll("images");  
+  const settingsRows = await dbGetAll("settings");  
+  const daySettingsRows = await dbGetAll("daySettings");  
+  const imagesEncoded = [];  
+  for(const img of images){  
+    imagesEncoded.push({ id: img.id, dataURL: await blobToDataURL(img.blob) });  
+  }  
+  const payload = {  
+    app:"lifelog-kakeibo", version:1, exportedAt: new Date().toISOString(),  
+    posts, images: imagesEncoded, settings: settingsRows, daySettings: daySettingsRows  
+  };  
+  const blob = new Blob([JSON.stringify(payload)], {type:"application/json"});  
+  const a = document.createElement("a");  
+  a.href = URL.createObjectURL(blob);  
+  a.download = `lifelog_backup_${new Date().toISOString().slice(0,10)}.json`;  
+  a.click();  
+});  
+  
+document.getElementById("importJsonInput").addEventListener("change", async (e)=>{  
+  const file = e.target.files[0];  
+  if(!file) return;  
+  const statusEl = document.getElementById("importStatus");  
+  try{  
+    const text = await file.text();  
+    const payload = JSON.parse(text);  
+    if(!confirm("現在の端末内データはすべて上書きされます。復元を実行しますか？")) return;  
+  
+    await dbClear("posts"); await dbClear("images");  
+    await dbClear("settings"); await dbClear("daySettings");  
+    imgURLCache.clear();  
+  
+    const idMap = {};  
+    for(const img of (payload.images||[])){  
+      const blob = await (await fetch(img.dataURL)).blob();  
+      const newId = await dbAdd("images", { blob });  
+      idMap[img.id] = newId;  
+    }  
+    for(const p of (payload.posts||[])){  
+      const np = { ...p };  
+      delete np.id;  
+      if(np.imageId!=null) np.imageId = idMap[np.imageId];  
+      await dbAdd("posts", np);  
+    }  
+    for(const s of (payload.settings||[])){ await dbPut("settings", s); }  
+    for(const ds of (payload.daySettings||[])){ await dbPut("daySettings", ds); }  
+  
+    await loadSettings();  
+    await renderHeader(); await renderTimeline();  
+    statusEl.textContent = "復元が完了しました。";  
+  }catch(err){  
+    console.error(err);  
+    statusEl.style.color = "var(--wine)";  
+    statusEl.textContent = "復元に失敗しました。ファイル形式をご確認ください。";  
+  } finally {  
+    e.target.value = "";  
+  }  
+});  
+  
+/* ================= 初期化 ================= */  
+(async function init(){  
+  await openDB();  
+  await loadSettings();  
+  await renderHeader();  
+  await renderTimeline();  
+})();  
+  
+})();  
+</script>  
+</body>  
+</html>  
