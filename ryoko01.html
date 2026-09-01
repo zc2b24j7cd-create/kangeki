@@ -25,13 +25,11 @@
     --card:#F7F8F3;  
   }  
   *{box-sizing:border-box;}  
-  html,body{height:100%;}  
   body{  
     background:var(--paper);  
     color:var(--ink);  
     font-family:'Zen Kaku Gothic New',sans-serif;  
     -webkit-tap-highlight-color:transparent;  
-    overscroll-behavior-y:none;  
   }  
   .serif{font-family:'Shippori Mincho',serif;}  
   .stitch{  
@@ -75,10 +73,10 @@
   dialog::backdrop{background:rgba(29,46,56,.55);}  
 </style>  
 </head>  
-<body class="flex flex-col min-h-screen">  
+<body class="min-h-screen pt-24 pb-16">  
   
-<!-- ===== ヘッダー ===== -->  
-<header class="fixed bottom-0 left-0 right-0 z-50 border-b hairline px-4 pt-3 pb-2" style="background:var(--paper);">  
+<!-- ===== ヘッダー (上部に固定) ===== -->  
+<header class="fixed top-0 left-0 right-0 z-40 border-b hairline px-4 pt-3 pb-2" style="background:var(--paper);">  
   <div class="flex items-center justify-between">  
     <h1 class="serif text-lg font-semibold tracking-wide" style="color:var(--navy-deep);">旅日誌帳</h1>  
     <span id="todayLabel" class="text-xs" style="color:var(--ink-soft);"></span>  
@@ -87,7 +85,7 @@
 </header>  
   
 <!-- ===== メインコンテンツ ===== -->  
-<main class="flex-1 overflow-y-auto pb-20">  
+<main class="w-full">  
   
   <!-- タブ① タイムライン -->  
   <section id="tab-timeline" class="fade-in px-3 pt-3">  
@@ -209,8 +207,8 @@
   </form>  
 </dialog>  
   
-<!-- ===== 下部タブバー ===== -->  
-<nav class="shrink-0 border-t hairline flex" style="background:var(--paper);">  
+<!-- ===== 下部タブバー (下に固定) ===== -->  
+<nav class="fixed bottom-0 left-0 right-0 z-50 border-t hairline flex" style="background:var(--paper);">  
   <button data-tab="timeline" class="tab-btn active flex-1 flex flex-col items-center py-2 text-[11px]">  
     <span class="tabdot w-1 h-1 rounded-full mb-0.5" style="background:var(--navy-deep);"></span>タイムライン  
   </button>  
@@ -604,10 +602,8 @@ async function renderSummaryTab(){
   if(!ds){  
     ds = { date, hiddenPostIds:[], insertedLogs:[], order: posts.map(p=>({type:"post", id:p.id})) };  
   } else {  
-    // 新しい投稿がorderに無ければ追加  
     const known = new Set(ds.order.filter(o=>o.type==="post").map(o=>o.id));  
     posts.forEach(p=>{ if(!known.has(p.id)) ds.order.push({type:"post", id:p.id}); });  
-    // 削除された投稿をorderから除去  
     const existing = new Set(posts.map(p=>p.id));  
     ds.order = ds.order.filter(o=> o.type!=="post" || existing.has(o.id));  
   }  
@@ -671,7 +667,6 @@ async function renderSummaryList(){
         persistDaySettings(); renderSummaryList();  
       });  
     } else {  
-      // insertedLog  
       const log = ds.insertedLogs.find(l=>l.id===item.id);  
       if(!log) continue;  
       row.innerHTML = `  
