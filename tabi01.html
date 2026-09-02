@@ -431,17 +431,53 @@
       if(tabName === 'budget') { renderBudgetBreakdown(); renderEventList(); }
     }
 
+  
+
+
     function handlePhotoSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
+
       const reader = new FileReader();
       reader.onload = function(evt) {
-        currentPhotoBase64 = evt.target.result;
-        document.getElementById('img-preview').src = currentPhotoBase64;
-        document.getElementById('img-preview-container').style.display = 'block';
+        const img = new Image();
+        img.onload = function() {
+          let width = img.width;
+          let height = img.height;
+          const maxSide = 1200;
+
+          // 長辺が1200pxを超える場合のみ、縦横比を維持して縮小する
+          if (width > maxSide || height > maxSide) {
+            if (width > height) {
+              height = Math.round((height * maxSide) / width);
+              width = maxSide;
+            } else {
+              width = Math.round((width * maxSide) / height);
+              height = maxSide;
+            }
+          }
+          // 1200px以下の場合は拡大せず、元のサイズのまま維持します
+
+          // Canvasを使って描画・圧縮
+          const canvas = document.createElement('canvas');
+          canvas.width = width;
+          canvas.height = height;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, width, height);
+
+          // 品質85%のJPEG形式でBase64に変換（軽量化と画質の両立）
+          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+
+          document.getElementById('img-preview').src = currentPhotoBase64;
+          document.getElementById('img-preview-container').style.display = 'block';
+        };
+        img.src = evt.target.result;
       };
       reader.readAsDataURL(file);
     }
+
+
+
 
     function clearImage() {
       currentPhotoBase64 = '';
@@ -745,18 +781,40 @@
       a.click();
     }
 
+    
+
     function createEvent() {
-      const title = document.getElementById('event-title').value.trim();
-      const start = document.getElementById('event-start').value;
-      const end = document.getElementById('event-end').value;
-      if (!title || !start || !end) { alert('イベント名と期間を入力してください。'); return; }
+      const titleInput = document.getElementById('event-title');
+      const startInput = document.getElementById('event-start');
+      const endInput = document.getElementById('event-end');
+
+      const title = titleInput ? titleInput.value.trim() : '';
+      let start = startInput ? startInput.value : '';
+      let end = endInput ? endInput.value : '';
+
+      if (!title) {
+        alert('イベント名を入力してください。');
+        return;
+      }
+
+      // 日付が未選択の場合は、今日の年月日をデフォルトとしてセットする
+      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
+      if (!start) start = todayStr;
+      if (!end) end = todayStr;
 
       events.push({ id: Date.now(), title, start, end });
       localStorage.setItem('tabi_events', JSON.stringify(events));
-      document.getElementById('event-title').value = '';
-      document.getElementById('event-start').value = ''; document.getElementById('event-end').value = '';
+
+      if (titleInput) titleInput.value = '';
+      if (startInput) startInput.value = '';
+      if (endInput) endInput.value = '';
+
+      showToast('イベントを作成しました！');
       renderEventList();
     }
+
+
+
 
     function renderEventList() {
       const container = document.getElementById('event-list');
