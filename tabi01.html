@@ -139,6 +139,15 @@
     /* カテゴリー管理・設定 */
     .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2ebf1; }
 
+    /* トースト通知 */
+    #toast-notification {
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
+      background: rgba(44, 74, 94, 0.95); color: #fff; padding: 10px 20px; border-radius: 20px;
+      font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+      opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 1000;
+    }
+    #toast-notification.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
     /* 下部ナビゲーション */
     .nav-bar {
       position: fixed; bottom: 0; left: 0; right: 0;
@@ -161,10 +170,13 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
-  <!-- 【修正】Google Maps APIキーを取得するまでは以下の行をコメントアウトしてエラーを防ぎます -->
+  <!-- Google Maps APIキーを設定するまではコメントアウト -->
   <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script> -->
 </head>
 <body>
+
+  <!-- 通知用トースト -->
+  <div id="toast-notification">投稿しました！</div>
 
   <!-- 月切り替え・繰越金バー -->
   <div class="month-selector-bar">
@@ -241,9 +253,10 @@
       <div id="category-breakdown"></div>
     </div>
 
-    <div class="card" style="background: #fffdf4; border: 1px solid #ffeeba;">
-      <div class="section-title" style="color: #856404; border-color: #ffeeba;">🏕 イベント・旅行ごとのまとめ</div>
-      <p style="font-size: 12px; color: #666; margin-bottom: 10px;">期間を指定して旅行費用などを個別に管理・PDF出力できます。</p>
+    <!-- 背景色を全体のトーンに合わせたグレーブルー系に変更、絵文字を削除 -->
+    <div class="card" style="background: #f4f7f9; border: 1px solid #cbd9e3;">
+      <div class="section-title">イベント・旅行ごとのまとめ</div>
+      <p style="font-size: 12px; color: #4a6375; margin-bottom: 10px;">期間を指定して旅行費用などを個別に管理・PDF出力できます。</p>
       
       <div style="margin-bottom: 8px;">
         <input type="text" id="event-title" placeholder="イベント名 (例: 夏の京都旅行)">
@@ -346,6 +359,15 @@
     document.getElementById('date-input').value = toDatetimeLocal(now);
     document.getElementById('setting-base-budget').value = baseBudget;
 
+    function showToast(message) {
+      const toast = document.getElementById('toast-notification');
+      toast.textContent = message;
+      toast.classList.add('show');
+      setTimeout(() => {
+        toast.classList.remove('show');
+      }, 2500);
+    }
+
     function changeMonth(step) {
       displayMonth += step;
       if (displayMonth > 12) { displayMonth = 1; displayYear++; }
@@ -356,7 +378,6 @@
       render();
     }
 
-    // 【修正】過去の余った予算を正しく計算して繰り越す処理
     function calculateCarryover() {
       const pastMonths = new Set();
       let pastSpent = 0;
@@ -367,14 +388,12 @@
         const y = d.getFullYear();
         const m = d.getMonth() + 1;
 
-        // 現在表示している月よりも「前」のデータがある月をカウント
         if (y < displayYear || (y === displayYear && m < displayMonth)) {
           pastMonths.add(`${y}-${m}`);
           pastSpent += (Number(p.amount) || 0);
         }
       });
 
-      // (データが存在する過去の月数 × 基本予算) - 過去に使った合計額 ＝ 正しい繰越金
       return (pastMonths.size * baseBudget) - pastSpent;
     }
 
@@ -387,7 +406,6 @@
 
       const totalSpent = monthPosts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
       const carryover = calculateCarryover();
-      // 今月の残り ＝ 今月の基本予算 ＋ 過去からの繰越金 － 今月の支出
       const remaining = baseBudget + carryover - totalSpent;
 
       document.getElementById('base-budget').textContent = `¥${baseBudget.toLocaleString()}`;
@@ -502,16 +520,26 @@
         editingPostId = null;
         document.getElementById('edit-banner').style.display = 'none';
         document.getElementById('submit-btn').textContent = '投稿する';
+        showToast('更新しました！');
       } else {
         posts.unshift({
           id: Date.now(), text: textInput.value, location: locationInput.value,
           amount: amountInput.value, category: catSelect.value,
           photo: currentPhotoBase64, datetime: dateInput.value
         });
+        showToast('投稿しました！');
       }
+
       localStorage.setItem('tabi_posts', JSON.stringify(posts));
-      textInput.value = ''; locationInput.value = ''; amountInput.value = '';
-      clearImage(); dateInput.value = toDatetimeLocal(new Date());
+      
+      // 投稿完了後に入力フォームを確実に自動リセット
+      textInput.value = ''; 
+      locationInput.value = ''; 
+      amountInput.value = '';
+      catSelect.value = '';
+      clearImage(); 
+      dateInput.value = toDatetimeLocal(new Date());
+
       render();
     });
 
@@ -588,18 +616,30 @@
       for(let date = 1; date <= lastDate; date++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
-        const dateStr = `${currentCalendarYear}/${String(currentCalendarMonth + 1).padStart(2, '0')}/${String(date).padStart(2, '0')}`;
+        
+        // 日付の一致判定を安全に行うため、YYYY-MM-DD形式の文字列を生成
+        const mStr = String(currentCalendarMonth + 1).padStart(2, '0');
+        const dStr = String(date).padStart(2, '0');
+        const targetDatePrefix = `${currentCalendarYear}-${mStr}-${dStr}`;
+
         if (currentCalendarYear === now.getFullYear() && currentCalendarMonth === now.getMonth() && date === now.getDate()) {
           cell.classList.add('today');
         }
-        const dayPosts = posts.filter(p => p.datetime && p.datetime.startsWith(dateStr.replace(/\//g, '-')));
+
+        // 【修正】カレンダーの日付マッチング処理を正確に改善
+        const dayPosts = posts.filter(p => {
+          if (!p.datetime) return false;
+          return p.datetime.startsWith(targetDatePrefix);
+        });
+
         const photoPost = dayPosts.find(p => p.photo);
         let inner = `<div class="calendar-num">${date}</div>`;
         if (photoPost) inner += `<img src="${photoPost.photo}" class="calendar-thumb">`;
         else if (dayPosts.length > 0) inner += `<div class="calendar-dot"></div>`;
         
         cell.innerHTML = inner;
-        cell.onclick = () => showDaySummary(dateStr, dayPosts);
+        const displayDateStr = `${currentCalendarYear}/${mStr}/${dStr}`;
+        cell.onclick = () => showDaySummary(displayDateStr, dayPosts);
         cellsContainer.appendChild(cell);
       }
     }
@@ -716,7 +756,7 @@
       const container = document.getElementById('event-list');
       if (!container) return;
       if (events.length === 0) {
-        container.innerHTML = '<div style="font-size:12px; color:#666;">イベントはまだ登録されていません。</div>'; return;
+        container.innerHTML = '<div style="font-size:12px; color:#4a6375;">イベントはまだ登録されていません。</div>'; return;
       }
       container.innerHTML = events.map(ev => {
         const evPosts = posts.filter(p => {
@@ -727,14 +767,14 @@
         const totalSpent = evPosts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
         const listItems = evPosts.map(p => `<li>${escapeHtml(p.text || p.location || '記録')} : ¥${Number(p.amount || 0).toLocaleString()}</li>`).join('');
         return `
-          <div id="event-box-${ev.id}" style="border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; background: white; border-radius: 6px;">
+          <div id="event-box-${ev.id}" style="border: 1px solid #cbd9e3; padding: 12px; margin-bottom: 10px; background: white; border-radius: 6px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
               <h4 style="margin: 0 0 5px 0; font-size: 14px; color: #2c4a5e;">${escapeHtml(ev.title)} (${ev.start} 〜 ${ev.end})</h4>
               <button class="btn-danger" onclick="deleteEvent(${ev.id})" style="font-size:10px;">削除</button>
             </div>
-            <p style="margin: 0 0 6px 0; font-size: 13px; color: #555;">合計支出: ¥${totalSpent.toLocaleString()}</p>
-            <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 12px; color:#333;">${listItems || '<li>期間内の記録なし</li>'}</ul>
-            <button class="btn-light" onclick="exportToPDF('event-box-${ev.id}')" style="font-size: 11px; background: #28a745; color: white; border:none;">このイベントをPDF出力</button>
+            <p style="margin: 0 0 6px 0; font-size: 13px; color: #4a6375;">合計支出: ¥${totalSpent.toLocaleString()}</p>
+            <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 12px; color:#354e60;">${listItems || '<li>期間内の記録なし</li>'}</ul>
+            <button class="btn-light" onclick="exportToPDF('event-box-${ev.id}')" style="font-size: 11px; background: #2c4a5e; color: white; border:none;">このイベントをPDF出力</button>
           </div>
         `;
       }).join('');
@@ -763,7 +803,6 @@
       }
     }
 
-    // 【修正】APIが読み込まれている時だけAutocompleteを発火させる安全設計に変更
     function initAutocomplete() {
       const locationInput = document.getElementById('expense-location');
       if (locationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
