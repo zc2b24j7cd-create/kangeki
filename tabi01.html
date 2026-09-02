@@ -604,6 +604,8 @@
       renderCalendar();
     }
 
+
+
     function renderCalendar() {
       const cellsContainer = document.getElementById('calendar-cells');
       if(!cellsContainer) return;
@@ -617,7 +619,7 @@
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
         
-        // 日付の一致判定を安全に行うため、YYYY-MM-DD形式の文字列を生成
+        // YYYY-MM-DD 形式のプレフィックスを生成
         const mStr = String(currentCalendarMonth + 1).padStart(2, '0');
         const dStr = String(date).padStart(2, '0');
         const targetDatePrefix = `${currentCalendarYear}-${mStr}-${dStr}`;
@@ -626,10 +628,11 @@
           cell.classList.add('today');
         }
 
-        // 【修正】カレンダーの日付マッチング処理を正確に改善
+        // 【修正】日付の比較をより安全・確実に行う（先頭10文字のYYYY-MM-DDで比較）
         const dayPosts = posts.filter(p => {
           if (!p.datetime) return false;
-          return p.datetime.startsWith(targetDatePrefix);
+          const pDateStr = p.datetime.substring(0, 10).replace(/\//g, '-');
+          return pDateStr === targetDatePrefix;
         });
 
         const photoPost = dayPosts.find(p => p.photo);
@@ -643,6 +646,9 @@
         cellsContainer.appendChild(cell);
       }
     }
+
+
+
 
     function showDaySummary(dateStr, dayPosts) {
       document.getElementById('selected-day-title').textContent = `${dateStr} の記録`;
