@@ -169,9 +169,6 @@
   <!-- ライブラリ読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  
-  <!-- Google Maps APIキーを設定するまではコメントアウト -->
-  <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script> -->
 </head>
 <body>
 
@@ -219,7 +216,6 @@
 
       <textarea id="post-input" placeholder="今日の記録を書く..."></textarea>
       
-      <!-- 場所入力 -->
       <div style="margin-bottom: 10px;">
         <input type="text" id="expense-location" placeholder="場所・お店（例: 京都駅、〇〇食堂）">
       </div>
@@ -253,7 +249,6 @@
       <div id="category-breakdown"></div>
     </div>
 
-    <!-- 背景色を全体のトーンに合わせたグレーブルー系に変更、絵文字を削除 -->
     <div class="card" style="background: #f4f7f9; border: 1px solid #cbd9e3;">
       <div class="section-title">イベント・旅行ごとのまとめ</div>
       <p style="font-size: 12px; color: #4a6375; margin-bottom: 10px;">期間を指定して旅行費用などを個別に管理・PDF出力できます。</p>
@@ -332,9 +327,82 @@
 
   <!-- スクリプト制御部 -->
   <script>
+    // ===== IndexedDB関連はここに全て集約 =====
+    const DB_NAME = 'TravelDiaryLocalDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'entries';
+
+    /**
+     * 1. データベースを開く（または初期化する）
+     */
+    function openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                }
+            };
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    /**
+     * 2. データを1件保存する（追加・更新）
+     */
+    async function saveToDB(data) {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put(data);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    /**
+     * 3. データを全件取得する
+     */
+    async function getAllFromDB() {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    /**
+     * 4. 指定したIDのデータを1件削除する
+     */
+    async function deleteFromDB(id) {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.delete(id);
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    /**
+     * 5. バックアップ用：全データをエクスポートする
+     */
+    async function exportAllDataFromDB() {
+        const allData = await getAllFromDB();
+        return JSON.stringify(allData);
+    }
+    // ==========================================
+
     let baseBudget = Number(localStorage.getItem('tabi_base_budget')) || 30000;
     let categories = JSON.parse(localStorage.getItem('tabi_categories')) || ['食費', '交通費', '観光', '日用品', 'その他'];
-    let posts = JSON.parse(localStorage.getItem('tabi_posts')) || [];
+    let posts = []; // IndexedDBから非同期で読み込みます
     let events = JSON.parse(localStorage.getItem('tabi_events')) || [];
     let currentPhotoBase64 = '';
     let editingPostId = null;
@@ -431,9 +499,7 @@
       if(tabName === 'budget') { renderBudgetBreakdown(); renderEventList(); }
     }
 
-  
-
-
+    // ===== 画像リサイズ処理（長辺最大400px・品質80%） =====
     function handlePhotoSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -444,9 +510,8 @@
         img.onload = function() {
           let width = img.width;
           let height = img.height;
-          const maxSide = 1200;
+          const maxSide = 400; // ★ 長辺最大400pxに変更
 
-          // 長辺が1200pxを超える場合のみ、縦横比を維持して縮小する
           if (width > maxSide || height > maxSide) {
             if (width > height) {
               height = Math.round((height * maxSide) / width);
@@ -456,17 +521,14 @@
               height = maxSide;
             }
           }
-          // 1200px以下の場合は拡大せず、元のサイズのまま維持します
 
-          // Canvasを使って描画・圧縮
           const canvas = document.createElement('canvas');
           canvas.width = width;
           canvas.height = height;
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          // 品質85%のJPEG形式でBase64に変換（軽量化と画質の両立）
-          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
+          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8); // 品質80%
 
           document.getElementById('img-preview').src = currentPhotoBase64;
           document.getElementById('img-preview-container').style.display = 'block';
@@ -475,9 +537,6 @@
       };
       reader.readAsDataURL(file);
     }
-
-
-
 
     function clearImage() {
       currentPhotoBase64 = '';
@@ -532,7 +591,8 @@
       }).join('');
     }
 
-    document.getElementById('submit-btn').addEventListener('click', () => {
+    // 投稿・更新ボタンのイベント（IndexedDB保存対応）
+    document.getElementById('submit-btn').addEventListener('click', async () => {
       const textInput = document.getElementById('post-input');
       const locationInput = document.getElementById('expense-location');
       const amountInput = document.getElementById('amount-input');
@@ -552,23 +612,25 @@
           post.category = catSelect.value;
           post.datetime = dateInput.value;
           if (currentPhotoBase64) post.photo = currentPhotoBase64;
+          await saveToDB(post); // DBを更新
         }
         editingPostId = null;
         document.getElementById('edit-banner').style.display = 'none';
         document.getElementById('submit-btn').textContent = '投稿する';
         showToast('更新しました！');
       } else {
-        posts.unshift({
-          id: Date.now(), text: textInput.value, location: locationInput.value,
+        const newPost = {
+          text: textInput.value, location: locationInput.value,
           amount: amountInput.value, category: catSelect.value,
           photo: currentPhotoBase64, datetime: dateInput.value
-        });
+        };
+        await saveToDB(newPost); // DBに新規追加
         showToast('投稿しました！');
       }
 
-      localStorage.setItem('tabi_posts', JSON.stringify(posts));
+      // 最新のデータをIndexedDBから再取得して画面を更新
+      posts = await getAllFromDB();
       
-      // 投稿完了後に入力フォームを確実に自動リセット
       textInput.value = ''; 
       locationInput.value = ''; 
       amountInput.value = '';
@@ -611,10 +673,10 @@
       document.getElementById('date-input').value = toDatetimeLocal(new Date());
     }
 
-    function deletePost(postId) {
+    async function deletePost(postId) {
       if (confirm('この投稿を削除しますか？')) {
-        posts = posts.filter(p => p.id !== postId);
-        localStorage.setItem('tabi_posts', JSON.stringify(posts));
+        await deleteFromDB(postId); // DBから削除
+        posts = await getAllFromDB(); // 最新データを再取得
         if (editingPostId === postId) cancelEdit();
         render();
       }
@@ -640,8 +702,6 @@
       renderCalendar();
     }
 
-
-
     function renderCalendar() {
       const cellsContainer = document.getElementById('calendar-cells');
       if(!cellsContainer) return;
@@ -655,7 +715,6 @@
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
         
-        // YYYY-MM-DD 形式のプレフィックスを生成
         const mStr = String(currentCalendarMonth + 1).padStart(2, '0');
         const dStr = String(date).padStart(2, '0');
         const targetDatePrefix = `${currentCalendarYear}-${mStr}-${dStr}`;
@@ -664,7 +723,6 @@
           cell.classList.add('today');
         }
 
-        // 【修正】日付の比較をより安全・確実に行う（先頭10文字のYYYY-MM-DDで比較）
         const dayPosts = posts.filter(p => {
           if (!p.datetime) return false;
           const pDateStr = p.datetime.substring(0, 10).replace(/\//g, '-');
@@ -682,9 +740,6 @@
         cellsContainer.appendChild(cell);
       }
     }
-
-
-
 
     function showDaySummary(dateStr, dayPosts) {
       document.getElementById('selected-day-title').textContent = `${dateStr} の記録`;
@@ -765,23 +820,23 @@
     }
 
     function removeCategory(idx) {
-      if(confirm(`「${categories[idx]}」を削除しますか？`)) {
+      if(confirm(`“${categories[idx]}”を削除しますか？`)) {
         categories.splice(idx, 1);
         localStorage.setItem('tabi_categories', JSON.stringify(categories));
         renderCategorySettings(); renderCategoryOptions();
       }
     }
 
-    function exportData() {
-      const data = { baseBudget, categories, posts, events };
+    // バックアップエクスポート（IndexedDBの全データを出力）
+    async function exportData() {
+      const allPosts = await getAllFromDB();
+      const data = { baseBudget, categories, posts: allPosts, events };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `tabi_journal_backup.json`;
       a.click();
     }
-
-    
 
     function createEvent() {
       const titleInput = document.getElementById('event-title');
@@ -797,7 +852,6 @@
         return;
       }
 
-      // 日付が未選択の場合は、今日の年月日をデフォルトとしてセットする
       const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       if (!start) start = todayStr;
       if (!end) end = todayStr;
@@ -812,9 +866,6 @@
       showToast('イベントを作成しました！');
       renderEventList();
     }
-
-
-
 
     function renderEventList() {
       const container = document.getElementById('event-list');
@@ -867,23 +918,19 @@
       }
     }
 
-    function initAutocomplete() {
-      const locationInput = document.getElementById('expense-location');
-      if (locationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-        new google.maps.places.Autocomplete(locationInput, {
-          types: ['establishment'],
-          componentRestrictions: { country: 'jp' }
-        });
-      }
-    }
-
     function escapeHtml(str) {
       return (str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
 
-    window.addEventListener('load', () => {
-      initAutocomplete();
+    // アプリ起動時にIndexedDBから全データを非同期でロードする
+    window.addEventListener('load', async () => {
       renderCategorySettings();
+      try {
+        posts = await getAllFromDB(); // 倉庫からデータを取得
+      } catch (e) {
+        console.error('データ読み込みエラー:', e);
+        posts = [];
+      }
       render();
     });
   </script>
