@@ -160,7 +160,9 @@
   <!-- ライブラリ読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script>
+  
+  <!-- 【修正】Google Maps APIキーを取得するまでは以下の行をコメントアウトしてエラーを防ぎます -->
+  <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script> -->
 </head>
 <body>
 
@@ -205,7 +207,7 @@
 
       <textarea id="post-input" placeholder="今日の記録を書く..."></textarea>
       
-      <!-- 場所入力（オートコンプリート） -->
+      <!-- 場所入力 -->
       <div style="margin-bottom: 10px;">
         <input type="text" id="expense-location" placeholder="場所・お店（例: 京都駅、〇〇食堂）">
       </div>
@@ -239,7 +241,6 @@
       <div id="category-breakdown"></div>
     </div>
 
-    <!-- イベント・旅行ごとのまとめセクション -->
     <div class="card" style="background: #fffdf4; border: 1px solid #ffeeba;">
       <div class="section-title" style="color: #856404; border-color: #ffeeba;">🏕 イベント・旅行ごとのまとめ</div>
       <p style="font-size: 12px; color: #666; margin-bottom: 10px;">期間を指定して旅行費用などを個別に管理・PDF出力できます。</p>
@@ -252,7 +253,6 @@
         <input type="date" id="event-end" style="font-size: 11px; padding: 6px;">
         <button class="btn-light" onclick="createEvent()" style="background: #2c4a5e; color: #fff;">作成</button>
       </div>
-
       <div id="event-list"></div>
     </div>
   </div>
@@ -287,7 +287,6 @@
         <button class="btn-submit" onclick="saveBaseBudget()">保存</button>
       </div>
     </div>
-
     <div class="card">
       <div class="section-title">カテゴリー管理</div>
       <div class="form-grid-row">
@@ -296,7 +295,6 @@
       </div>
       <div id="category-list"></div>
     </div>
-
     <div class="card">
       <div class="section-title">データ管理</div>
       <button class="btn-light" style="width:100%; font-weight:bold;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
@@ -328,11 +326,9 @@
     let currentPhotoBase64 = '';
     let editingPostId = null;
 
-    // 現在選択中の表示月（デフォルトは当月）
     const now = new Date();
     let displayYear = now.getFullYear();
-    let displayMonth = now.getMonth() + 1; // 1〜12
-
+    let displayMonth = now.getMonth() + 1;
     let currentCalendarYear = now.getFullYear();
     let currentCalendarMonth = now.getMonth();
 
@@ -346,12 +342,10 @@
     };
 
     const formatDateDisplay = (date) => `${date.getFullYear()}/${String(date.getMonth() + 1).padStart(2, '0')}/${String(date.getDate()).padStart(2, '0')}`;
-
     document.getElementById('current-header-date').textContent = formatDateDisplay(now);
     document.getElementById('date-input').value = toDatetimeLocal(now);
     document.getElementById('setting-base-budget').value = baseBudget;
 
-    // 月変更ボタン
     function changeMonth(step) {
       displayMonth += step;
       if (displayMonth > 12) { displayMonth = 1; displayYear++; }
@@ -362,25 +356,29 @@
       render();
     }
 
-    // 前月までの収支差額（繰越金）を自動計算するロジック
+    // 【修正】過去の余った予算を正しく計算して繰り越す処理
     function calculateCarryover() {
-      // 選択中月より前の全データの収支差額を計算（予算 - 支出）
-      let carry = 0;
+      const pastMonths = new Set();
+      let pastSpent = 0;
+
       posts.forEach(p => {
         if (!p.datetime) return;
-        const pDate = new Date(p.datetime);
-        const pY = pDate.getFullYear();
-        const pM = pDate.getMonth() + 1;
-        // 選択月より前のデータ対象
-        if (pY < displayYear || (pY === displayYear && pM < displayMonth)) {
-          carry -= Number(p.amount) || 0;
+        const d = new Date(p.datetime);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+
+        // 現在表示している月よりも「前」のデータがある月をカウント
+        if (y < displayYear || (y === displayYear && m < displayMonth)) {
+          pastMonths.add(`${y}-${m}`);
+          pastSpent += (Number(p.amount) || 0);
         }
       });
-      return carry;
+
+      // (データが存在する過去の月数 × 基本予算) - 過去に使った合計額 ＝ 正しい繰越金
+      return (pastMonths.size * baseBudget) - pastSpent;
     }
 
     function updateHeaderSummary() {
-      // 選択中の月のデータのみ抽出
       const monthPosts = posts.filter(p => {
         if (!p.datetime) return false;
         const d = new Date(p.datetime);
@@ -389,6 +387,7 @@
 
       const totalSpent = monthPosts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
       const carryover = calculateCarryover();
+      // 今月の残り ＝ 今月の基本予算 ＋ 過去からの繰越金 － 今月の支出
       const remaining = baseBudget + carryover - totalSpent;
 
       document.getElementById('base-budget').textContent = `¥${baseBudget.toLocaleString()}`;
@@ -406,19 +405,12 @@
     function switchTab(tabName, el) {
       document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
-      
       document.getElementById(`tab-${tabName}`).classList.add('active');
       el.classList.add('active');
 
       updateHeaderSummary();
-      if(tabName === 'summary') {
-        initCalendarMonthSelect();
-        renderCalendar();
-      }
-      if(tabName === 'budget') {
-        renderBudgetBreakdown();
-        renderEventList();
-      }
+      if(tabName === 'summary') { initCalendarMonthSelect(); renderCalendar(); }
+      if(tabName === 'budget') { renderBudgetBreakdown(); renderEventList(); }
     }
 
     function handlePhotoSelect(e) {
@@ -438,7 +430,6 @@
       const imgPreview = document.getElementById('img-preview');
       const container = document.getElementById('img-preview-container');
       const photoInput = document.getElementById('photo-input');
-      
       if(imgPreview) imgPreview.src = '';
       if(container) container.style.display = 'none';
       if(photoInput) photoInput.value = '';
@@ -446,17 +437,13 @@
 
     function renderCategoryOptions() {
       const select = document.getElementById('category-select');
-      select.innerHTML = '<option value="">未分類</option>' +
-        categories.map(c => `<option value="${c}">${c}</option>`).join('');
+      select.innerHTML = '<option value="">未分類</option>' + categories.map(c => `<option value="${c}">${c}</option>`).join('');
     }
 
     function render() {
       renderCategoryOptions();
       updateHeaderSummary();
-
       const container = document.getElementById('posts-container');
-      
-      // 今表示している月のデータだけをタイムラインに表示
       const monthPosts = posts.filter(p => {
         if (!p.datetime) return false;
         const d = new Date(p.datetime);
@@ -491,7 +478,6 @@
       }).join('');
     }
 
-    // 投稿ボタン処理
     document.getElementById('submit-btn').addEventListener('click', () => {
       const textInput = document.getElementById('post-input');
       const locationInput = document.getElementById('expense-location');
@@ -500,8 +486,7 @@
       const dateInput = document.getElementById('date-input');
 
       if (!textInput.value.trim() && !amountInput.value && !currentPhotoBase64 && !locationInput.value.trim()) {
-        alert('内容を入力してください。');
-        return;
+        alert('内容を入力してください。'); return;
       }
 
       if (editingPostId !== null) {
@@ -518,48 +503,33 @@
         document.getElementById('edit-banner').style.display = 'none';
         document.getElementById('submit-btn').textContent = '投稿する';
       } else {
-        const newPost = {
-          id: Date.now(),
-          text: textInput.value,
-          location: locationInput.value,
-          amount: amountInput.value,
-          category: catSelect.value,
-          photo: currentPhotoBase64,
-          datetime: dateInput.value
-        };
-        posts.unshift(newPost);
+        posts.unshift({
+          id: Date.now(), text: textInput.value, location: locationInput.value,
+          amount: amountInput.value, category: catSelect.value,
+          photo: currentPhotoBase64, datetime: dateInput.value
+        });
       }
-
       localStorage.setItem('tabi_posts', JSON.stringify(posts));
-
-      // フォーム初期化
-      textInput.value = '';
-      locationInput.value = '';
-      amountInput.value = '';
-      clearImage();
-      dateInput.value = toDatetimeLocal(new Date());
-
+      textInput.value = ''; locationInput.value = ''; amountInput.value = '';
+      clearImage(); dateInput.value = toDatetimeLocal(new Date());
       render();
     });
 
     function startEdit(postId) {
       const post = posts.find(p => p.id === postId);
       if (!post) return;
-
       editingPostId = postId;
       document.getElementById('post-input').value = post.text || '';
       document.getElementById('expense-location').value = post.location || '';
       document.getElementById('amount-input').value = post.amount || '';
       document.getElementById('category-select').value = post.category || '';
       document.getElementById('date-input').value = post.datetime || toDatetimeLocal(new Date());
-
       clearImage();
       if (post.photo) {
         currentPhotoBase64 = post.photo;
         document.getElementById('img-preview').src = currentPhotoBase64;
         document.getElementById('img-preview-container').style.display = 'block';
       }
-
       document.getElementById('edit-banner-text').textContent = `投稿を編集中`;
       document.getElementById('edit-banner').style.display = 'flex';
       document.getElementById('submit-btn').textContent = '更新する';
@@ -586,19 +556,15 @@
       }
     }
 
-    // カレンダー関連
     function initCalendarMonthSelect() {
       const select = document.getElementById('calendar-month-select');
       if (!select) return;
       let optionsHtml = '';
       for (let i = -12; i <= 12; i++) {
         const d = new Date(now.getFullYear(), now.getMonth() + i, 1);
-        const y = d.getFullYear();
-        const m = d.getMonth();
-        const val = `${y}-${m}`;
-        const label = `${y}年 ${m + 1}月`;
+        const y = d.getFullYear(); const m = d.getMonth();
         const selected = (y === currentCalendarYear && m === currentCalendarMonth) ? 'selected' : '';
-        optionsHtml += `<option value="${val}" ${selected}>${label}</option>`;
+        optionsHtml += `<option value="${y}-${m}" ${selected}>${y}年 ${m + 1}月</option>`;
       }
       select.innerHTML = optionsHtml;
     }
@@ -614,32 +580,24 @@
       const cellsContainer = document.getElementById('calendar-cells');
       if(!cellsContainer) return;
       cellsContainer.innerHTML = '';
-
       const firstDay = new Date(currentCalendarYear, currentCalendarMonth, 1).getDay();
       const lastDate = new Date(currentCalendarYear, currentCalendarMonth + 1, 0).getDate();
 
-      for(let i = 0; i < firstDay; i++) {
-        cellsContainer.appendChild(document.createElement('div'));
-      }
+      for(let i = 0; i < firstDay; i++) cellsContainer.appendChild(document.createElement('div'));
 
       for(let date = 1; date <= lastDate; date++) {
         const cell = document.createElement('div');
         cell.className = 'calendar-cell';
         const dateStr = `${currentCalendarYear}/${String(currentCalendarMonth + 1).padStart(2, '0')}/${String(date).padStart(2, '0')}`;
-        
         if (currentCalendarYear === now.getFullYear() && currentCalendarMonth === now.getMonth() && date === now.getDate()) {
           cell.classList.add('today');
         }
-
         const dayPosts = posts.filter(p => p.datetime && p.datetime.startsWith(dateStr.replace(/\//g, '-')));
         const photoPost = dayPosts.find(p => p.photo);
-
         let inner = `<div class="calendar-num">${date}</div>`;
-        if (photoPost) {
-          inner += `<img src="${photoPost.photo}" class="calendar-thumb">`;
-        } else if (dayPosts.length > 0) {
-          inner += `<div class="calendar-dot"></div>`;
-        }
+        if (photoPost) inner += `<img src="${photoPost.photo}" class="calendar-thumb">`;
+        else if (dayPosts.length > 0) inner += `<div class="calendar-dot"></div>`;
+        
         cell.innerHTML = inner;
         cell.onclick = () => showDaySummary(dateStr, dayPosts);
         cellsContainer.appendChild(cell);
@@ -649,19 +607,14 @@
     function showDaySummary(dateStr, dayPosts) {
       document.getElementById('selected-day-title').textContent = `${dateStr} の記録`;
       const container = document.getElementById('day-summary-list');
-      
       if(dayPosts.length === 0) {
-        container.innerHTML = '<div style="color:#4a6375; font-size:13px;">この日の記録はありません。</div>';
-        return;
+        container.innerHTML = '<div style="color:#4a6375; font-size:13px;">この日の記録はありません。</div>'; return;
       }
-
       const dayTotal = dayPosts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
       let html = `<div style="font-weight:bold; color:#2c4a5e; margin-bottom:10px; font-size:14px;">合計支出: ¥${dayTotal.toLocaleString()}</div>`;
       html += dayPosts.map(post => `
         <div class="post-card">
-          <div class="post-header">
-            <span>${post.datetime ? post.datetime.replace('T', ' ') : ''}</span>
-          </div>
+          <div class="post-header"><span>${post.datetime ? post.datetime.replace('T', ' ') : ''}</span></div>
           ${post.location ? `<div class="post-location">📍 ${escapeHtml(post.location)}</div>` : ''}
           ${post.photo ? `<img src="${post.photo}" class="post-img">` : ''}
           <div class="post-text">${escapeHtml(post.text)}</div>
@@ -677,24 +630,19 @@
     function renderBudgetBreakdown() {
       const container = document.getElementById('category-breakdown');
       if(!container) return;
-      
       const monthPosts = posts.filter(p => {
         if (!p.datetime) return false;
         const d = new Date(p.datetime);
         return d.getFullYear() === displayYear && (d.getMonth() + 1) === displayMonth;
       });
-
       const totals = {};
       monthPosts.forEach(p => {
         const cat = p.category || '未分類';
         totals[cat] = (totals[cat] || 0) + (Number(p.amount) || 0);
       });
-
       if (Object.keys(totals).length === 0) {
-        container.innerHTML = '<div style="color:#4a6375; font-size:13px;">支出データがありません。</div>';
-        return;
+        container.innerHTML = '<div style="color:#4a6375; font-size:13px;">支出データがありません。</div>'; return;
       }
-
       container.innerHTML = Object.keys(totals).map(cat => `
         <div style="display:flex; justify-content:space-between; padding:8px 0; border-bottom:1px solid #e2ebf1;">
           <span style="font-size:13px;">${escapeHtml(cat)}</span>
@@ -730,8 +678,7 @@
         categories.push(val);
         localStorage.setItem('tabi_categories', JSON.stringify(categories));
         input.value = '';
-        renderCategorySettings();
-        renderCategoryOptions();
+        renderCategorySettings(); renderCategoryOptions();
       }
     }
 
@@ -739,8 +686,7 @@
       if(confirm(`「${categories[idx]}」を削除しますか？`)) {
         categories.splice(idx, 1);
         localStorage.setItem('tabi_categories', JSON.stringify(categories));
-        renderCategorySettings();
-        renderCategoryOptions();
+        renderCategorySettings(); renderCategoryOptions();
       }
     }
 
@@ -753,47 +699,33 @@
       a.click();
     }
 
-    // イベント作成とPDF出力機能
     function createEvent() {
       const title = document.getElementById('event-title').value.trim();
       const start = document.getElementById('event-start').value;
       const end = document.getElementById('event-end').value;
+      if (!title || !start || !end) { alert('イベント名と期間を入力してください。'); return; }
 
-      if (!title || !start || !end) {
-        alert('イベント名と期間を入力してください。');
-        return;
-      }
-
-      const newEvent = { id: Date.now(), title, start, end };
-      events.push(newEvent);
+      events.push({ id: Date.now(), title, start, end });
       localStorage.setItem('tabi_events', JSON.stringify(events));
-      
       document.getElementById('event-title').value = '';
-      document.getElementById('event-start').value = '';
-      document.getElementById('event-end').value = '';
+      document.getElementById('event-start').value = ''; document.getElementById('event-end').value = '';
       renderEventList();
     }
 
     function renderEventList() {
       const container = document.getElementById('event-list');
       if (!container) return;
-
       if (events.length === 0) {
-        container.innerHTML = '<div style="font-size:12px; color:#666;">イベントはまだ登録されていません。</div>';
-        return;
+        container.innerHTML = '<div style="font-size:12px; color:#666;">イベントはまだ登録されていません。</div>'; return;
       }
-
       container.innerHTML = events.map(ev => {
-        // 期間内の投稿を抽出
         const evPosts = posts.filter(p => {
           if (!p.datetime) return false;
           const pDateStr = p.datetime.split('T')[0];
           return pDateStr >= ev.start && pDateStr <= ev.end;
         });
-
         const totalSpent = evPosts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
         const listItems = evPosts.map(p => `<li>${escapeHtml(p.text || p.location || '記録')} : ¥${Number(p.amount || 0).toLocaleString()}</li>`).join('');
-
         return `
           <div id="event-box-${ev.id}" style="border: 1px solid #ddd; padding: 12px; margin-bottom: 10px; background: white; border-radius: 6px;">
             <div style="display:flex; justify-content:space-between; align-items:center;">
@@ -816,8 +748,7 @@
 
     async function exportToPDF(elementId) {
       const element = document.getElementById(elementId);
-      if (!element) { alert('出力対象が見つかりません'); return; }
-      
+      if (!element) return;
       try {
         const canvas = await html2canvas(element, { scale: 2 });
         const imgData = canvas.toDataURL('image/png');
@@ -825,24 +756,26 @@
         const pdf = new jsPDF('p', 'mm', 'a4');
         const pdfWidth = pdf.internal.pageSize.getWidth();
         const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        
         pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
         pdf.save('tabinisshi_event.pdf');
       } catch (error) {
-        console.error("PDF出力エラー:", error);
         alert('PDFの出力に失敗しました。');
       }
     }
 
-    // Google Places API オートコンプリート初期化
+    // 【修正】APIが読み込まれている時だけAutocompleteを発火させる安全設計に変更
     function initAutocomplete() {
       const locationInput = document.getElementById('expense-location');
-      if (locationInput && typeof google !== 'undefined') {
+      if (locationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
         new google.maps.places.Autocomplete(locationInput, {
           types: ['establishment'],
           componentRestrictions: { country: 'jp' }
         });
       }
+    }
+
+    function escapeHtml(str) {
+      return (str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
 
     window.addEventListener('load', () => {
