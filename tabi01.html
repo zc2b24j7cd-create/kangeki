@@ -150,6 +150,13 @@
     .post-amount { font-weight: bold; color: #2c4a5e; font-size: 14px; }
     .post-tag { background: #e6eef4; padding: 2px 8px; border-radius: 4px; color: #2c4a5e; font-size: 11px; font-weight: 500; }
 
+    /* 年間予算プログレスバー */
+    .annual-progress-container { margin-bottom: 4px; }
+    .annual-info-row { display: flex; justify-content: space-between; font-size: 12px; color: #4a6375; margin-bottom: 6px; }
+    .progress-bar-bg { background: #e2ebf1; border-radius: 4px; height: 10px; width: 100%; overflow: hidden; margin-bottom: 6px; }
+    .progress-bar-fill { background: #4a7595; height: 100%; border-radius: 4px; transition: width 0.3s ease; }
+    .annual-percentage { text-align: right; font-size: 11px; color: #4a6375; font-weight: bold; }
+
     /* カレンダー（1日まとめ） */
     .calendar-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #e2ebf1; padding-bottom: 6px; }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
@@ -192,10 +199,6 @@
     .nav-dot { width: 4px; height: 4px; background: #2c4a5e; border-radius: 50%; margin-bottom: 2px; opacity: 0; }
     .nav-item.active .nav-dot { opacity: 1; }
   </style>
-
-  <!-- ライブラリ読み込み -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
   
   <!-- Google Maps APIキーを設定するまではコメントアウト -->
   <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script> -->
@@ -308,26 +311,27 @@
     <div id="posts-container" class="posts-list"></div>
   </div>
 
-  <!-- タブ2: 予算内訳 -->
+  <!-- タブ2: 予算内訳 (年間まとめ＆カテゴリー別当月支出) -->
   <div id="tab-budget" class="tab-content">
+    <!-- 年間予算と支出カード -->
     <div class="card">
-      <div class="section-title">カテゴリー別支出内訳</div>
-      <div id="category-breakdown"></div>
+      <div class="section-title" id="annual-title">2026年の年間予算と支出</div>
+      <div class="annual-progress-container">
+        <div class="annual-info-row">
+          <span id="annual-spent-text">支出: ¥0</span>
+          <span id="annual-budget-text">年間予算: ¥540,000</span>
+        </div>
+        <div class="progress-bar-bg">
+          <div id="annual-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
+        </div>
+        <div class="annual-percentage" id="annual-percentage-text">0.0%</div>
+      </div>
     </div>
 
-    <div class="card" style="background: #f4f7f9; border: 1px solid #cbd9e3;">
-      <div class="section-title">イベント・旅行ごとのまとめ</div>
-      <p style="font-size: 12px; color: #4a6375; margin-bottom: 10px;">期間を指定して旅行費用などを個別に管理・PDF出力できます。</p>
-      
-      <div style="margin-bottom: 8px;">
-        <input type="text" id="event-title" placeholder="イベント名 (例: 夏の京都旅行)">
-      </div>
-      <div style="margin-bottom: 10px; display: flex; gap: 6px; align-items: center;">
-        <input type="date" id="event-start" style="font-size: 11px; padding: 6px;"> 〜 
-        <input type="date" id="event-end" style="font-size: 11px; padding: 6px;">
-        <button class="btn-light" onclick="createEvent()" style="background: #2c4a5e; color: #fff;">作成</button>
-      </div>
-      <div id="event-list"></div>
+    <!-- カテゴリー別支出内訳（当月） -->
+    <div class="card">
+      <div class="section-title">カテゴリー別支出内訳 (当月)</div>
+      <div id="category-breakdown"></div>
     </div>
   </div>
 
@@ -355,10 +359,17 @@
   <!-- タブ4: 設定 -->
   <div id="tab-settings" class="tab-content">
     <div class="card">
-      <div class="section-title">基本予算設定</div>
+      <div class="section-title">基本予算設定 (月額)</div>
       <div class="form-grid-row">
         <input type="number" id="setting-base-budget" placeholder="例: 30000">
         <button class="btn-submit" onclick="saveBaseBudget()">保存</button>
+      </div>
+    </div>
+    <div class="card">
+      <div class="section-title">年間予算設定</div>
+      <div class="form-grid-row">
+        <input type="number" id="setting-annual-budget" placeholder="例: 540000">
+        <button class="btn-submit" onclick="saveAnnualBudget()">保存</button>
       </div>
     </div>
     <div class="card">
@@ -381,7 +392,7 @@
       <div class="nav-dot"></div>タイムライン
     </div>
     <div class="nav-item" onclick="switchTab('budget', this)">
-      <div class="nav-dot"></div>予算・イベント
+      <div class="nav-dot"></div>予算内訳
     </div>
     <div class="nav-item" onclick="switchTab('summary', this)">
       <div class="nav-dot"></div>1日まとめ
@@ -394,9 +405,9 @@
   <!-- スクリプト制御部 -->
   <script>
     let baseBudget = Number(localStorage.getItem('tabi_base_budget')) || 30000;
+    let annualBudget = Number(localStorage.getItem('tabi_annual_budget')) || 540000;
     let categories = JSON.parse(localStorage.getItem('tabi_categories')) || ['食費', '交通費', '観光', '日用品', 'その他'];
     let posts = JSON.parse(localStorage.getItem('tabi_posts')) || [];
-    let events = JSON.parse(localStorage.getItem('tabi_events')) || [];
     let currentPhotoBase64 = '';
     let editingPostId = null;
 
@@ -443,7 +454,7 @@
           const res = new Function(`return (${sanitized})`)();
           if (!isNaN(res) && isFinite(res)) {
             document.getElementById('amount-input').value = Math.floor(res);
-            toggleCalculator(); // 金額を反映したら自動で電卓を閉じる
+            toggleCalculator();
           }
         } catch (e) {
           alert('数式が正しくありません');
@@ -472,6 +483,7 @@
     document.getElementById('current-header-date').textContent = formatDateDisplay(now);
     document.getElementById('date-input').value = toDatetimeLocal(now);
     document.getElementById('setting-base-budget').value = baseBudget;
+    document.getElementById('setting-annual-budget').value = annualBudget;
 
     function showToast(message) {
       const toast = document.getElementById('toast-notification');
@@ -534,6 +546,25 @@
       remEl.style.color = remaining < 0 ? '#d9534f' : '#2c4a5e';
     }
 
+    function updateAnnualSummary() {
+      document.getElementById('annual-title').textContent = `${displayYear}年の年間予算と支出`;
+      
+      const yearPosts = posts.filter(p => {
+        if (!p.datetime) return false;
+        const d = new Date(p.datetime);
+        return d.getFullYear() === displayYear;
+      });
+
+      const totalYearSpent = yearPosts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
+      let percentage = annualBudget > 0 ? (totalYearSpent / annualBudget) * 100 : 0;
+      if (percentage > 100) percentage = 100;
+
+      document.getElementById('annual-spent-text').textContent = `支出: ¥${totalYearSpent.toLocaleString()}`;
+      document.getElementById('annual-budget-text').textContent = `年間予算: ¥${annualBudget.toLocaleString()}`;
+      document.getElementById('annual-progress-fill').style.width = `${percentage}%`;
+      document.getElementById('annual-percentage-text').textContent = `${percentage.toFixed(1)}%`;
+    }
+
     function switchTab(tabName, el) {
       document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
@@ -542,7 +573,7 @@
 
       updateHeaderSummary();
       if(tabName === 'summary') { initCalendarMonthSelect(); renderCalendar(); }
-      if(tabName === 'budget') { renderBudgetBreakdown(); renderEventList(); }
+      if(tabName === 'budget') { renderBudgetBreakdown(); updateAnnualSummary(); }
     }
 
     function handlePhotoSelect(e) {
@@ -838,6 +869,15 @@
       updateHeaderSummary();
     }
 
+    function saveAnnualBudget() {
+      const val = Number(document.getElementById('setting-annual-budget').value);
+      if(!val) return;
+      annualBudget = val;
+      localStorage.setItem('tabi_annual_budget', annualBudget);
+      alert('年間予算を保存しました');
+      updateAnnualSummary();
+    }
+
     function renderCategorySettings() {
       const list = document.getElementById('category-list');
       if(!list) return;
@@ -869,7 +909,7 @@
     }
 
     function exportData() {
-      const data = { baseBudget, categories, posts, events };
+      const data = { baseBudget, annualBudget, categories, posts };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -877,102 +917,11 @@
       a.click();
     }
 
-    function createEvent() {
-      const titleInput = document.getElementById('event-title');
-      const startInput = document.getElementById('event-start');
-      const endInput = document.getElementById('event-end');
-
-      const title = titleInput ? titleInput.value.trim() : '';
-      let start = startInput ? startInput.value : '';
-      let end = endInput ? endInput.value : '';
-
-      if (!title) {
-        alert('イベント名を入力してください。');
-        return;
-      }
-
-      const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
-      if (!start) start = todayStr;
-      if (!end) end = todayStr;
-
-      events.push({ id: Date.now(), title, start, end });
-      localStorage.setItem('tabi_events', JSON.stringify(events));
-
-      if (titleInput) titleInput.value = '';
-      if (startInput) startInput.value = '';
-      if (endInput) endInput.value = '';
-
-      showToast('イベントを作成しました！');
-      renderEventList();
-    }
-
-    function renderEventList() {
-      const container = document.getElementById('event-list');
-      if (!container) return;
-      if (events.length === 0) {
-        container.innerHTML = '<div style="font-size:12px; color:#4a6375;">イベントはまだ登録されていません。</div>'; return;
-      }
-      container.innerHTML = events.map(ev => {
-        const evPosts = posts.filter(p => {
-          if (!p.datetime) return false;
-          const pDateStr = p.datetime.split('T')[0];
-          return pDateStr >= ev.start && pDateStr <= ev.end;
-        });
-        const totalSpent = evPosts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-        const listItems = evPosts.map(p => `<li>${escapeHtml(p.text || p.location || '記録')} : ¥${Number(p.amount || 0).toLocaleString()}</li>`).join('');
-        return `
-          <div id="event-box-${ev.id}" style="border: 1px solid #cbd9e3; padding: 12px; margin-bottom: 10px; background: white; border-radius: 6px;">
-            <div style="display:flex; justify-content:space-between; align-items:center;">
-              <h4 style="margin: 0 0 5px 0; font-size: 14px; color: #2c4a5e;">${escapeHtml(ev.title)} (${ev.start} 〜 ${ev.end})</h4>
-              <button class="btn-danger" onclick="deleteEvent(${ev.id})" style="font-size:10px;">削除</button>
-            </div>
-            <p style="margin: 0 0 6px 0; font-size: 13px; color: #4a6375;">合計支出: ¥${totalSpent.toLocaleString()}</p>
-            <ul style="margin: 0 0 10px 0; padding-left: 20px; font-size: 12px; color:#354e60;">${listItems || '<li>期間内の記録なし</li>'}</ul>
-            <button class="btn-light" onclick="exportToPDF('event-box-${ev.id}')" style="font-size: 11px; background: #2c4a5e; color: white; border:none;">このイベントをPDF出力</button>
-          </div>
-        `;
-      }).join('');
-    }
-
-    function deleteEvent(id) {
-      events = events.filter(e => e.id !== id);
-      localStorage.setItem('tabi_events', JSON.stringify(events));
-      renderEventList();
-    }
-
-    async function exportToPDF(elementId) {
-      const element = document.getElementById(elementId);
-      if (!element) return;
-      try {
-        const canvas = await html2canvas(element, { scale: 2 });
-        const imgData = canvas.toDataURL('image/png');
-        const { jsPDF } = window.jspdf;
-        const pdf = new jsPDF('p', 'mm', 'a4');
-        const pdfWidth = pdf.internal.pageSize.getWidth();
-        const pdfHeight = (canvas.height * pdfWidth) / canvas.width;
-        pdf.addImage(imgData, 'PNG', 0, 0, pdfWidth, pdfHeight);
-        pdf.save('tabinisshi_event.pdf');
-      } catch (error) {
-        alert('PDFの出力に失敗しました。');
-      }
-    }
-
-    function initAutocomplete() {
-      const locationInput = document.getElementById('expense-location');
-      if (locationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
-        new google.maps.places.Autocomplete(locationInput, {
-          types: ['establishment'],
-          componentRestrictions: { country: 'jp' }
-        });
-      }
-    }
-
     function escapeHtml(str) {
       return (str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
 
     window.addEventListener('load', () => {
-      initAutocomplete();
       renderCategorySettings();
       render();
     });
