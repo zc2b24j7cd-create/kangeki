@@ -32,27 +32,15 @@
 
     /* ヘッダー */
     .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: baseline;
-      border-bottom: 1px solid #cbd9e3;
-      padding-bottom: 8px;
-      margin-bottom: 15px;
+      display: flex; justify-content: space-between; align-items: baseline; border-bottom: 1px solid #cbd9e3; padding-bottom: 8px; margin-bottom: 15px;
     }
     .title { font-size: 22px; font-weight: bold; color: #2c4a5e; letter-spacing: 1px; }
     .date { font-size: 13px; color: #4a6375; }
 
     /* 予算サマリー */
     .summary-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      text-align: center;
-      margin-bottom: 15px;
-      background: #ffffff;
-      padding: 12px 8px;
-      border-radius: 8px;
-      border: 1px solid #cbd9e3;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      display: grid; grid-template-columns: 1fr 1fr 1fr; text-align: center; margin-bottom: 15px;
+      background: #ffffff; padding: 12px 8px; border-radius: 8px; border: 1px solid #cbd9e3; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
     .summary-label { font-size: 11px; color: #4a6375; margin-bottom: 4px; }
     .summary-value { font-size: 15px; font-weight: 700; color: #2c4a5e; }
@@ -63,37 +51,23 @@
 
     /* UIパーツ共通 */
     .card {
-      background: #ffffff;
-      border: 1px solid #cbd9e3;
-      border-radius: 8px;
-      padding: 14px;
-      margin-bottom: 15px;
-      box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+      background: #ffffff; border: 1px solid #cbd9e3; border-radius: 8px; padding: 14px; margin-bottom: 15px; box-shadow: 0 1px 3px rgba(0,0,0,0.03);
     }
     .section-title { font-size: 14px; font-weight: bold; color: #2c4a5e; margin-bottom: 10px; border-bottom: 1px solid #e2ebf1; padding-bottom: 6px; }
     
     input[type="text"], input[type="number"], input[type="datetime-local"], select, textarea {
-      border: 1px solid #b8cbd7;
-      border-radius: 6px;
-      padding: 8px;
-      font-size: 13px;
-      background: #f8fafc;
-      color: #1a2b35;
-      width: 100%;
+      border: 1px solid #b8cbd7; border-radius: 6px; padding: 8px; font-size: 13px; background: #f8fafc; color: #1a2b35; width: 100%;
     }
     textarea { height: 70px; font-size: 14px; resize: none; margin-bottom: 10px; }
     
     .btn-submit {
-      background: #2c4a5e; color: #ffffff; border: none; border-radius: 6px;
-      padding: 10px 16px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap;
+      background: #2c4a5e; color: #ffffff; border: none; border-radius: 6px; padding: 10px 16px; font-size: 13px; font-weight: bold; cursor: pointer; white-space: nowrap;
     }
     .btn-light {
-      background: #f8fafc; border: 1px solid #b8cbd7; border-radius: 6px;
-      padding: 8px 10px; font-size: 12px; color: #354e60; cursor: pointer; white-space: nowrap;
+      background: #f8fafc; border: 1px solid #b8cbd7; border-radius: 6px; padding: 8px 10px; font-size: 12px; color: #354e60; cursor: pointer; white-space: nowrap;
     }
     .btn-danger {
-      background: #d9534f; color: white; border: none; border-radius: 4px;
-      padding: 4px 8px; font-size: 11px; cursor: pointer;
+      background: #d9534f; color: white; border: none; border-radius: 4px; padding: 4px 8px; font-size: 11px; cursor: pointer;
     }
 
     /* フォーム要素レイアウト */
@@ -104,39 +78,29 @@
     .submit-container { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .input-date { flex: 1; font-size: 12px; color: #4a6375; border: 1px solid #b8cbd7; background: #f8fafc; border-radius: 6px; padding: 7px; }
 
-    /* 電卓専用スタイル */
-    .calc-toggle-btn {
-      background: #e2ebf1; border: 1px solid #b8cbd7; border-radius: 6px;
-      padding: 4px 8px; font-size: 11px; color: #2c4a5e; cursor: pointer; font-weight: bold;
-    }
-    .calculator-box {
-      display: none; background: #f0f4f8; border: 1px solid #cbd9e3; border-radius: 8px;
-      padding: 10px; margin-bottom: 10px;
-    }
-    .calculator-box.open { display: block; }
-    .calc-screen {
-      background: #ffffff; border: 1px solid #b8cbd7; border-radius: 6px;
-      padding: 8px; font-size: 18px; text-align: right; margin-bottom: 8px;
-      color: #1a2b35; min-height: 42px; word-break: break-all; font-weight: bold;
-    }
-    .calc-grid {
-      display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
-    }
-    .calc-btn {
-      background: #ffffff; border: 1px solid #cbd9e3; border-radius: 6px;
-      padding: 10px 0; font-size: 18px; font-weight: bold; color: #2c4a5e;
-      cursor: pointer; text-align: center;
-    }
-    .calc-btn:active { background: #dce6ed; }
-    .calc-btn.operator { background: #e2ebf1; color: #1a2b35; }
-    .calc-btn.action { background: #2c4a5e; color: #ffffff; }
-
     /* 編集中バナー */
     #edit-banner {
       display: none; background: #e2ebf1; border: 1px dashed #2c4a5e; border-radius: 6px;
-      padding: 6px 10px; font-size: 12px; color: #2c4a5e; margin-bottom: 8px;
-      justify-content: space-between; align-items: center;
+      padding: 6px 10px; font-size: 12px; color: #2c4a5e; margin-bottom: 8px; justify-content: space-between; align-items: center;
     }
+
+    /* 電卓エリア */
+    .calc-container {
+      background: #f8fafc; border: 1px solid #cbd9e3; border-radius: 8px; padding: 10px; margin-bottom: 10px; display: none;
+    }
+    .calc-display {
+      width: 100%; background: #ffffff; border: 1px solid #b8cbd7; border-radius: 6px; font-size: 18px; font-weight: bold; text-align: right; padding: 8px 12px; margin-bottom: 8px; color: #2c4a5e; letter-spacing: 1px; min-height: 40px; word-break: break-all;
+    }
+    .calc-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 4px;
+    }
+    .calc-btn {
+      background: #ffffff; border: 1px solid #cbd9e3; border-radius: 4px; padding: 10px 0; font-size: 14px; font-weight: bold; color: #2c4a5e; cursor: pointer; text-align: center;
+    }
+    .calc-btn:active { background: #e2ebf1; }
+    .calc-btn.op { background: #f0f8ff; color: #354e60; }
+    .calc-btn.eq { background: #2c4a5e; color: #ffffff; }
+    .calc-btn.wide { grid-column: span 2; }
 
     /* タイムライン・投稿 */
     .posts-list { display: flex; flex-direction: column; gap: 12px; }
@@ -145,25 +109,17 @@
     .post-actions { display: flex; gap: 4px; }
     .post-text { font-size: 14px; line-height: 1.5; white-space: pre-wrap; margin-bottom: 8px; }
     .post-location { font-size: 12px; color: #2c4a5e; margin-bottom: 6px; font-weight: 500; }
-    .post-img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 6px; margin-bottom: 8px; }
+    .post-img { width: 100%; max-height: 300px; object-fit: contain; background: #f8fafc; border-radius: 6px; margin-bottom: 8px; display: block; }
     .post-footer { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
     .post-amount { font-weight: bold; color: #2c4a5e; font-size: 14px; }
     .post-tag { background: #e6eef4; padding: 2px 8px; border-radius: 4px; color: #2c4a5e; font-size: 11px; font-weight: 500; }
-
-    /* 年間予算プログレスバー */
-    .annual-progress-container { margin-bottom: 4px; }
-    .annual-info-row { display: flex; justify-content: space-between; font-size: 12px; color: #4a6375; margin-bottom: 6px; }
-    .progress-bar-bg { background: #e2ebf1; border-radius: 4px; height: 10px; width: 100%; overflow: hidden; margin-bottom: 6px; }
-    .progress-bar-fill { background: #4a7595; height: 100%; border-radius: 4px; transition: width 0.3s ease; }
-    .annual-percentage { text-align: right; font-size: 11px; color: #4a6375; font-weight: bold; }
 
     /* カレンダー（1日まとめ） */
     .calendar-header-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; border-bottom: 1px solid #e2ebf1; padding-bottom: 6px; }
     .calendar-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 3px; text-align: center; }
     .calendar-day-head { font-size: 11px; font-weight: bold; color: #4a6375; padding: 4px 0; }
     .calendar-cell {
-      background: #f8fafc; border: 1px solid #cbd9e3; border-radius: 4px;
-      min-height: 50px; padding: 2px; position: relative; cursor: pointer; display: flex; flex-direction: column; align-items: center;
+      background: #f8fafc; border: 1px solid #cbd9e3; border-radius: 4px; min-height: 50px; padding: 2px; position: relative; cursor: pointer; display: flex; flex-direction: column; align-items: center;
     }
     .calendar-cell.today { border: 2px solid #2c4a5e; font-weight: bold; }
     .calendar-num { font-size: 10px; color: #354e60; align-self: flex-start; }
@@ -173,46 +129,39 @@
     /* カテゴリー管理・設定 */
     .cat-item { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid #e2ebf1; }
 
+    /* 年間グラフ用のプログレスバー */
+    .progress-container { width: 100%; height: 14px; background: #e2ebf1; border-radius: 7px; overflow: hidden; margin-top: 6px; }
+    .progress-bar { height: 100%; background: #5a94ba; width: 0%; transition: width 0.4s ease; }
+    .progress-bar.over { background: #d9534f; }
+
     /* トースト通知 */
     #toast-notification {
-      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px);
-      background: rgba(44, 74, 94, 0.95); color: #fff; padding: 10px 20px; border-radius: 20px;
-      font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-      opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 1000;
+      position: fixed; bottom: 90px; left: 50%; transform: translateX(-50%) translateY(20px); background: rgba(44, 74, 94, 0.95); color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: bold; box-shadow: 0 4px 12px rgba(0,0,0,0.15); opacity: 0; transition: all 0.3s ease; pointer-events: none; z-index: 1000;
     }
     #toast-notification.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
     /* 下部ナビゲーション */
     .nav-bar {
-      position: fixed; bottom: 0; left: 0; right: 0;
-      background: #b0c8d8; border-top: 1px solid #cbd9e3;
-      display: flex; justify-content: space-around; align-items: center;
-      padding-top: 12px;
-      padding-bottom: max(35px, calc(25px + env(safe-area-inset-bottom)));
-      z-index: 100;
+      position: fixed; bottom: 0; left: 0; right: 0; background: #b0c8d8; border-top: 1px solid #cbd9e3; display: flex; justify-content: space-around; align-items: center; padding-top: 12px; padding-bottom: max(35px, calc(25px + env(safe-area-inset-bottom))); z-index: 100;
     }
     .nav-item {
-      display: flex; flex-direction: column; align-items: center;
-      font-size: 11px; color: #4a6375; cursor: pointer; flex: 1;
+      display: flex; flex-direction: column; align-items: center; font-size: 11px; color: #4a6375; cursor: pointer; flex: 1;
     }
     .nav-item.active { color: #2c4a5e; font-weight: bold; }
     .nav-dot { width: 4px; height: 4px; background: #2c4a5e; border-radius: 50%; margin-bottom: 2px; opacity: 0; }
     .nav-item.active .nav-dot { opacity: 1; }
   </style>
-  
-  <!-- Google Maps APIキーを設定するまではコメントアウト -->
-  <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script> -->
 </head>
 <body>
 
   <!-- 通知用トースト -->
-  <div id="toast-notification">投稿しました！</div>
+  <div id="toast-notification">投稿しました</div>
 
   <!-- 月切り替え・繰越金バー -->
   <div class="month-selector-bar">
-    <button class="btn-light" onclick="changeMonth(-1)">＜ 先月</button>
+    <button class="btn-light" onclick="changeMonth(-1)">先月</button>
     <h2 id="current-month-display" style="font-size: 16px; margin: 0; color: #2c4a5e;">2026年 9月</h2>
-    <button class="btn-light" onclick="changeMonth(1)">次月 ＞</button>
+    <button class="btn-light" onclick="changeMonth(1)">次月</button>
   </div>
   <div class="carryover-card">
     <span>前月からの繰越（残高）:</span>
@@ -243,13 +192,12 @@
   <div id="tab-timeline" class="tab-content active">
     <div class="card">
       <div id="edit-banner">
-        <span id="edit-banner-text">編集中...</span>
+        <span id="edit-banner-text">編集中</span>
         <button type="button" class="btn-danger" style="padding:2px 6px; font-size:10px;" onclick="cancelEdit()">編集をやめる</button>
       </div>
 
       <textarea id="post-input" placeholder="今日の記録を書く..."></textarea>
       
-      <!-- 場所入力 -->
       <div style="margin-bottom: 10px;">
         <input type="text" id="expense-location" placeholder="場所・お店（例: 京都駅、〇〇食堂）">
       </div>
@@ -260,7 +208,7 @@
       </div>
 
       <div class="form-grid-row">
-        <label class="btn-light input-photo-btn">
+        <label class="btn-light input-photo-btn" style="cursor:pointer;">
           写真
           <input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="handlePhotoSelect(event)">
         </label>
@@ -268,37 +216,40 @@
         <select id="category-select" class="select-category"></select>
       </div>
 
-      <!-- ▼ 電卓トグル＆展開パネル -->
-      <div style="display: flex; justify-content: flex-end; margin-bottom: 6px;">
-        <button type="button" class="calc-toggle-btn" onclick="toggleCalculator()">電卓を開く 🧮</button>
+      <!-- 電卓トグルボタン -->
+      <div style="display: flex; justify-content: flex-end; margin-bottom: 8px;">
+        <button type="button" class="btn-light" id="calc-toggle-btn" onclick="toggleCalculator()" style="font-size: 11px; padding: 4px 8px;">電卓を開く</button>
       </div>
-      <div id="calculator-panel" class="calculator-box">
-        <div id="calc-screen" class="calc-screen">0</div>
+
+      <!-- 電卓パネル -->
+      <div id="calculator-panel" class="calc-container">
+        <div id="calc-screen" class="calc-display">0</div>
         <div class="calc-grid">
-          <button type="button" class="calc-btn operator" onclick="calcInput('C')">C</button>
-          <button type="button" class="calc-btn operator" onclick="calcInput('DEL')">←</button>
-          <button type="button" class="calc-btn operator" onclick="calcInput('/')">÷</button>
-          <button type="button" class="calc-btn operator" onclick="calcInput('*')">×</button>
-          
-          <button type="button" class="calc-btn" onclick="calcInput('7')">7</button>
-          <button type="button" class="calc-btn" onclick="calcInput('8')">8</button>
-          <button type="button" class="calc-btn" onclick="calcInput('9')">9</button>
-          <button type="button" class="calc-btn operator" onclick="calcInput('-')">-</button>
-          
-          <button type="button" class="calc-btn" onclick="calcInput('4')">4</button>
-          <button type="button" class="calc-btn" onclick="calcInput('5')">5</button>
-          <button type="button" class="calc-btn" onclick="calcInput('6')">6</button>
-          <button type="button" class="calc-btn operator" onclick="calcInput('+')">+</button>
-          
-          <button type="button" class="calc-btn" onclick="calcInput('1')">1</button>
-          <button type="button" class="calc-btn" onclick="calcInput('2')">2</button>
-          <button type="button" class="calc-btn" onclick="calcInput('3')">3</button>
-          <button type="button" class="calc-btn action" onclick="calcInput('=')">=</button>
-          
-          <button type="button" class="calc-btn" onclick="calcInput('00')">00</button>
-          <button type="button" class="calc-btn" onclick="calcInput('0')">0</button>
-          <button type="button" class="calc-btn" onclick="calcInput('.')">.</button>
-          <button type="button" class="calc-btn action" onclick="calcInput('apply')" style="background:#2c4a5e; font-size:12px;">金額に反映</button>
+          <button type="button" class="calc-btn op" onclick="calcClear()">C</button>
+          <button type="button" class="calc-btn op" onclick="calcBackSpace()">←</button>
+          <button type="button" class="calc-btn op" onclick="calcAppend('/')">÷</button>
+          <button type="button" class="calc-btn op" onclick="calcAppend('*')">×</button>
+
+          <button type="button" class="calc-btn" onclick="calcAppend('7')">7</button>
+          <button type="button" class="calc-btn" onclick="calcAppend('8')">8</button>
+          <button type="button" class="calc-btn" onclick="calcAppend('9')">9</button>
+          <button type="button" class="calc-btn op" onclick="calcAppend('-')">-</button>
+
+          <button type="button" class="calc-btn" onclick="calcAppend('4')">4</button>
+          <button type="button" class="calc-btn" onclick="calcAppend('5')">5</button>
+          <button type="button" class="calc-btn" onclick="calcAppend('6')">6</button>
+          <button type="button" class="calc-btn op" onclick="calcAppend('+')">+</button>
+
+          <button type="button" class="calc-btn" onclick="calcAppend('1')">1</button>
+          <button type="button" class="calc-btn" onclick="calcAppend('2')">2</button>
+          <button type="button" class="calc-btn" onclick="calcAppend('3')">3</button>
+          <button type="button" class="calc-btn eq" onclick="calcCalculate()" style="grid-row: span 2; height: auto;">=</button>
+
+          <button type="button" class="calc-btn" onclick="calcAppend('00')">00</button>
+          <button type="button" class="calc-btn" onclick="calcAppend('0')">0</button>
+          <button type="button" class="calc-btn" onclick="calcAppend('.')">.</button>
+
+          <button type="button" class="calc-btn wide" onclick="calcApplyToAmount()" style="background:#2c4a5e; color:#fff;">金額に反映</button>
         </div>
       </div>
 
@@ -311,24 +262,20 @@
     <div id="posts-container" class="posts-list"></div>
   </div>
 
-  <!-- タブ2: 予算内訳 (年間まとめ＆カテゴリー別当月支出) -->
+  <!-- タブ2: 予算内訳・年間グラフ -->
   <div id="tab-budget" class="tab-content">
-    <!-- 年間予算と支出カード -->
-    <div class="card">
-      <div class="section-title" id="annual-title">2026年の年間予算と支出</div>
-      <div class="annual-progress-container">
-        <div class="annual-info-row">
-          <span id="annual-spent-text">支出: ¥0</span>
-          <span id="annual-budget-text">年間予算: ¥540,000</span>
-        </div>
-        <div class="progress-bar-bg">
-          <div id="annual-progress-fill" class="progress-bar-fill" style="width: 0%;"></div>
-        </div>
-        <div class="annual-percentage" id="annual-percentage-text">0.0%</div>
+    <div class="card" style="background: #f4f7f9; border-color: #b0c8d8;">
+      <div class="section-title" id="annual-title">年間予算と支出</div>
+      <div style="display: flex; justify-content: space-between; font-size: 12px; color: #4a6375; margin-bottom: 4px;">
+        <span id="annual-spent-text">支出: ¥0</span>
+        <span id="annual-budget-text">予算: ¥0</span>
       </div>
+      <div class="progress-container">
+        <div class="progress-bar" id="annual-progress-bar"></div>
+      </div>
+      <div style="text-align: right; font-size: 11px; color: #4a6375; margin-top: 4px;" id="annual-percent-text">0%</div>
     </div>
 
-    <!-- カテゴリー別支出内訳（当月） -->
     <div class="card">
       <div class="section-title">カテゴリー別支出内訳 (当月)</div>
       <div id="category-breakdown"></div>
@@ -359,18 +306,12 @@
   <!-- タブ4: 設定 -->
   <div id="tab-settings" class="tab-content">
     <div class="card">
-      <div class="section-title">基本予算設定 (月額)</div>
+      <div class="section-title">基本予算設定</div>
       <div class="form-grid-row">
         <input type="number" id="setting-base-budget" placeholder="例: 30000">
         <button class="btn-submit" onclick="saveBaseBudget()">保存</button>
       </div>
-    </div>
-    <div class="card">
-      <div class="section-title">年間予算設定</div>
-      <div class="form-grid-row">
-        <input type="number" id="setting-annual-budget" placeholder="例: 540000">
-        <button class="btn-submit" onclick="saveAnnualBudget()">保存</button>
-      </div>
+      <div style="font-size: 11px; color: #4a6375;">※毎月共通の予算です。12ヶ月分が年間予算として計算されます。</div>
     </div>
     <div class="card">
       <div class="section-title">カテゴリー管理</div>
@@ -404,10 +345,60 @@
 
   <!-- スクリプト制御部 -->
   <script>
+    const DB_NAME = 'TravelDiaryLocalDB';
+    const DB_VERSION = 1;
+    const STORE_NAME = 'entries';
+
+    function openDatabase() {
+        return new Promise((resolve, reject) => {
+            const request = indexedDB.open(DB_NAME, DB_VERSION);
+            request.onupgradeneeded = (event) => {
+                const db = event.target.result;
+                if (!db.objectStoreNames.contains(STORE_NAME)) {
+                    db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
+                }
+            };
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    async function saveToDB(data) {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.put(data);
+            request.onsuccess = () => resolve(request.result);
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    async function getAllFromDB() {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readonly');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.getAll();
+            request.onsuccess = (event) => resolve(event.target.result);
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
+    async function deleteFromDB(id) {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.delete(id);
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
+
     let baseBudget = Number(localStorage.getItem('tabi_base_budget')) || 30000;
-    let annualBudget = Number(localStorage.getItem('tabi_annual_budget')) || 540000;
     let categories = JSON.parse(localStorage.getItem('tabi_categories')) || ['食費', '交通費', '観光', '日用品', 'その他'];
-    let posts = JSON.parse(localStorage.getItem('tabi_posts')) || [];
+    let posts = [];
     let currentPhotoBase64 = '';
     let editingPostId = null;
 
@@ -416,59 +407,6 @@
     let displayMonth = now.getMonth() + 1;
     let currentCalendarYear = now.getFullYear();
     let currentCalendarMonth = now.getMonth();
-
-    // ===== 電卓の制御ロジック =====
-    let calcExpression = "0";
-
-    function toggleCalculator() {
-      const panel = document.getElementById('calculator-panel');
-      const btn = document.querySelector('.calc-toggle-btn');
-      panel.classList.toggle('open');
-      if (panel.classList.contains('open')) {
-        btn.textContent = '電卓を閉じる 🧮';
-      } else {
-        btn.textContent = '電卓を開く 🧮';
-      }
-    }
-
-    function calcInput(val) {
-      const screen = document.getElementById('calc-screen');
-
-      if (val === 'C') {
-        calcExpression = "0";
-      } else if (val === 'DEL') {
-        calcExpression = calcExpression.length > 1 ? calcExpression.slice(0, -1) : "0";
-      } else if (val === '=') {
-        try {
-          let sanitized = calcExpression.replace(/×/g, '*').replace(/÷/g, '/');
-          const res = new Function(`return (${sanitized})`)();
-          if (!isNaN(res) && isFinite(res)) {
-            calcExpression = String(Math.floor(res));
-          }
-        } catch (e) {
-          calcExpression = "エラー";
-        }
-      } else if (val === 'apply') {
-        try {
-          let sanitized = calcExpression.replace(/×/g, '*').replace(/÷/g, '/');
-          const res = new Function(`return (${sanitized})`)();
-          if (!isNaN(res) && isFinite(res)) {
-            document.getElementById('amount-input').value = Math.floor(res);
-            toggleCalculator();
-          }
-        } catch (e) {
-          alert('数式が正しくありません');
-        }
-      } else {
-        if (calcExpression === "0" || calcExpression === "エラー") {
-          calcExpression = val;
-        } else {
-          calcExpression += val;
-        }
-      }
-      screen.textContent = calcExpression;
-    }
-    // ============================
 
     const toDatetimeLocal = (date) => {
       const y = date.getFullYear();
@@ -483,15 +421,12 @@
     document.getElementById('current-header-date').textContent = formatDateDisplay(now);
     document.getElementById('date-input').value = toDatetimeLocal(now);
     document.getElementById('setting-base-budget').value = baseBudget;
-    document.getElementById('setting-annual-budget').value = annualBudget;
 
     function showToast(message) {
       const toast = document.getElementById('toast-notification');
       toast.textContent = message;
       toast.classList.add('show');
-      setTimeout(() => {
-        toast.classList.remove('show');
-      }, 2500);
+      setTimeout(() => { toast.classList.remove('show'); }, 2500);
     }
 
     function changeMonth(step) {
@@ -502,6 +437,9 @@
       document.getElementById('current-month-display').innerText = `${displayYear}年 ${displayMonth}月`;
       updateHeaderSummary();
       render();
+      if(document.getElementById('tab-budget').classList.contains('active')) {
+        renderBudgetBreakdown();
+      }
     }
 
     function calculateCarryover() {
@@ -546,25 +484,6 @@
       remEl.style.color = remaining < 0 ? '#d9534f' : '#2c4a5e';
     }
 
-    function updateAnnualSummary() {
-      document.getElementById('annual-title').textContent = `${displayYear}年の年間予算と支出`;
-      
-      const yearPosts = posts.filter(p => {
-        if (!p.datetime) return false;
-        const d = new Date(p.datetime);
-        return d.getFullYear() === displayYear;
-      });
-
-      const totalYearSpent = yearPosts.reduce((sum, item) => sum + (Number(item.amount) || 0), 0);
-      let percentage = annualBudget > 0 ? (totalYearSpent / annualBudget) * 100 : 0;
-      if (percentage > 100) percentage = 100;
-
-      document.getElementById('annual-spent-text').textContent = `支出: ¥${totalYearSpent.toLocaleString()}`;
-      document.getElementById('annual-budget-text').textContent = `年間予算: ¥${annualBudget.toLocaleString()}`;
-      document.getElementById('annual-progress-fill').style.width = `${percentage}%`;
-      document.getElementById('annual-percentage-text').textContent = `${percentage.toFixed(1)}%`;
-    }
-
     function switchTab(tabName, el) {
       document.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
       document.querySelectorAll('.nav-item').forEach(ni => ni.classList.remove('active'));
@@ -573,7 +492,7 @@
 
       updateHeaderSummary();
       if(tabName === 'summary') { initCalendarMonthSelect(); renderCalendar(); }
-      if(tabName === 'budget') { renderBudgetBreakdown(); updateAnnualSummary(); }
+      if(tabName === 'budget') { renderBudgetBreakdown(); }
     }
 
     function handlePhotoSelect(e) {
@@ -586,7 +505,7 @@
         img.onload = function() {
           let width = img.width;
           let height = img.height;
-          const maxSide = 1200;
+          const maxSide = 400;
 
           if (width > maxSide || height > maxSide) {
             if (width > height) {
@@ -604,8 +523,7 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
-
+          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
           document.getElementById('img-preview').src = currentPhotoBase64;
           document.getElementById('img-preview-container').style.display = 'block';
         };
@@ -633,11 +551,12 @@
       renderCategoryOptions();
       updateHeaderSummary();
       const container = document.getElementById('posts-container');
+      
       const monthPosts = posts.filter(p => {
         if (!p.datetime) return false;
         const d = new Date(p.datetime);
         return d.getFullYear() === displayYear && (d.getMonth() + 1) === displayMonth;
-      });
+      }).sort((a, b) => new Date(b.datetime) - new Date(a.datetime));
 
       if (monthPosts.length === 0) {
         container.innerHTML = `<div style="text-align:center; color:#4a6375; margin-top:30px; font-size:13px;">${displayYear}年${displayMonth}月の記録はまだありません。</div>`;
@@ -655,7 +574,7 @@
                 <button class="btn-danger" style="font-size:10px; padding:2px 6px;" onclick="deletePost(${post.id})">削除</button>
               </div>
             </div>
-            ${post.location ? `<div class="post-location">📍 ${escapeHtml(post.location)}</div>` : ''}
+            ${post.location ? `<div class="post-location">${escapeHtml(post.location)}</div>` : ''}
             ${post.photo ? `<img src="${post.photo}" class="post-img">` : ''}
             <div class="post-text">${escapeHtml(post.text)}</div>
             <div class="post-footer">
@@ -667,7 +586,81 @@
       }).join('');
     }
 
-    document.getElementById('submit-btn').addEventListener('click', () => {
+    // 電卓機能ロジック
+    let calcExpression = '0';
+
+    function toggleCalculator() {
+      const panel = document.getElementById('calculator-panel');
+      const btn = document.getElementById('calc-toggle-btn');
+      if (panel.style.display === 'block') {
+        panel.style.display = 'none';
+        btn.textContent = '電卓を開く';
+      } else {
+        panel.style.display = 'block';
+        btn.textContent = '電卓を閉じる';
+      }
+    }
+
+    function updateCalcScreen() {
+      document.getElementById('calc-screen').textContent = calcExpression;
+    }
+
+    function calcClear() {
+      calcExpression = '0';
+      updateCalcScreen();
+    }
+
+    function calcBackSpace() {
+      if (calcExpression.length > 1) {
+        calcExpression = calcExpression.slice(0, -1);
+      } else {
+        calcExpression = '0';
+      }
+      updateCalcScreen();
+    }
+
+    function calcAppend(val) {
+      if (calcExpression === '0' && val !== '.') {
+        calcExpression = val;
+      } else {
+        calcExpression += val;
+      }
+      updateCalcScreen();
+    }
+
+    function calcCalculate() {
+      try {
+        let sanitized = calcExpression.replace(/[^0-9+\-*/().]/g, '');
+        let result = Function('"use strict"; return (' + sanitized + ')')();
+        if (isFinite(result)) {
+          calcExpression = String(result);
+          updateCalcScreen();
+        } else {
+          calcExpression = 'エラー';
+          updateCalcScreen();
+          setTimeout(calcClear, 1500);
+        }
+      } catch (e) {
+        calcExpression = 'エラー';
+        updateCalcScreen();
+        setTimeout(calcClear, 1500);
+      }
+    }
+
+    function calcApplyToAmount() {
+      try {
+        let sanitized = calcExpression.replace(/[^0-9+\-*/().]/g, '');
+        let result = Function('"use strict"; return (' + sanitized + ')')();
+        if (isFinite(result)) {
+          document.getElementById('amount-input').value = Math.round(result);
+          toggleCalculator();
+        }
+      } catch (e) {
+        alert('数式を正しく計算できませんでした');
+      }
+    }
+
+    document.getElementById('submit-btn').addEventListener('click', async () => {
       const textInput = document.getElementById('post-input');
       const locationInput = document.getElementById('expense-location');
       const amountInput = document.getElementById('amount-input');
@@ -687,21 +680,23 @@
           post.category = catSelect.value;
           post.datetime = dateInput.value;
           if (currentPhotoBase64) post.photo = currentPhotoBase64;
+          await saveToDB(post);
         }
         editingPostId = null;
         document.getElementById('edit-banner').style.display = 'none';
         document.getElementById('submit-btn').textContent = '投稿する';
-        showToast('更新しました！');
+        showToast('更新しました');
       } else {
-        posts.unshift({
-          id: Date.now(), text: textInput.value, location: locationInput.value,
+        const newPost = {
+          text: textInput.value, location: locationInput.value,
           amount: amountInput.value, category: catSelect.value,
           photo: currentPhotoBase64, datetime: dateInput.value
-        });
-        showToast('投稿しました！');
+        };
+        await saveToDB(newPost);
+        showToast('投稿しました');
       }
 
-      localStorage.setItem('tabi_posts', JSON.stringify(posts));
+      posts = await getAllFromDB();
       
       textInput.value = ''; 
       locationInput.value = ''; 
@@ -728,7 +723,7 @@
         document.getElementById('img-preview').src = currentPhotoBase64;
         document.getElementById('img-preview-container').style.display = 'block';
       }
-      document.getElementById('edit-banner-text').textContent = `投稿を編集中`;
+      document.getElementById('edit-banner-text').textContent = '投稿を編集中';
       document.getElementById('edit-banner').style.display = 'flex';
       document.getElementById('submit-btn').textContent = '更新する';
       window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -745,10 +740,10 @@
       document.getElementById('date-input').value = toDatetimeLocal(new Date());
     }
 
-    function deletePost(postId) {
+    async function deletePost(postId) {
       if (confirm('この投稿を削除しますか？')) {
-        posts = posts.filter(p => p.id !== postId);
-        localStorage.setItem('tabi_posts', JSON.stringify(posts));
+        await deleteFromDB(postId);
+        posts = await getAllFromDB();
         if (editingPostId === postId) cancelEdit();
         render();
       }
@@ -821,10 +816,10 @@
       }
       const dayTotal = dayPosts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
       let html = `<div style="font-weight:bold; color:#2c4a5e; margin-bottom:10px; font-size:14px;">合計支出: ¥${dayTotal.toLocaleString()}</div>`;
-      html += dayPosts.map(post => `
+      html += dayPosts.sort((a, b) => new Date(b.datetime) - new Date(a.datetime)).map(post => `
         <div class="post-card">
           <div class="post-header"><span>${post.datetime ? post.datetime.replace('T', ' ') : ''}</span></div>
-          ${post.location ? `<div class="post-location">📍 ${escapeHtml(post.location)}</div>` : ''}
+          ${post.location ? `<div class="post-location">${escapeHtml(post.location)}</div>` : ''}
           ${post.photo ? `<img src="${post.photo}" class="post-img">` : ''}
           <div class="post-text">${escapeHtml(post.text)}</div>
           <div class="post-footer">
@@ -837,6 +832,27 @@
     }
 
     function renderBudgetBreakdown() {
+      const annualPosts = posts.filter(p => {
+        if (!p.datetime) return false;
+        return new Date(p.datetime).getFullYear() === displayYear;
+      });
+      const annualSpent = annualPosts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
+      const annualBudget = baseBudget * 12;
+      const percent = annualBudget > 0 ? (annualSpent / annualBudget) * 100 : 0;
+      
+      document.getElementById('annual-title').textContent = `${displayYear}年の年間予算と支出`;
+      document.getElementById('annual-spent-text').textContent = `支出: ¥${annualSpent.toLocaleString()}`;
+      document.getElementById('annual-budget-text').textContent = `年間予算: ¥${annualBudget.toLocaleString()}`;
+      document.getElementById('annual-percent-text').textContent = `${percent.toFixed(1)}%`;
+      
+      const bar = document.getElementById('annual-progress-bar');
+      bar.style.width = `${Math.min(percent, 100)}%`;
+      if (annualSpent > annualBudget) {
+        bar.classList.add('over');
+      } else {
+        bar.classList.remove('over');
+      }
+
       const container = document.getElementById('category-breakdown');
       if(!container) return;
       const monthPosts = posts.filter(p => {
@@ -865,17 +881,11 @@
       if(!val) return;
       baseBudget = val;
       localStorage.setItem('tabi_base_budget', baseBudget);
-      alert('基本予算を保存しました');
+      alert('基本予算を保存しました。年間予算（12ヶ月分）も自動計算されます。');
       updateHeaderSummary();
-    }
-
-    function saveAnnualBudget() {
-      const val = Number(document.getElementById('setting-annual-budget').value);
-      if(!val) return;
-      annualBudget = val;
-      localStorage.setItem('tabi_annual_budget', annualBudget);
-      alert('年間予算を保存しました');
-      updateAnnualSummary();
+      if(document.getElementById('tab-budget').classList.contains('active')) {
+        renderBudgetBreakdown();
+      }
     }
 
     function renderCategorySettings() {
@@ -901,15 +911,16 @@
     }
 
     function removeCategory(idx) {
-      if(confirm(`「${categories[idx]}」を削除しますか？`)) {
+      if(confirm(`“${categories[idx]}”を削除しますか？`)) {
         categories.splice(idx, 1);
         localStorage.setItem('tabi_categories', JSON.stringify(categories));
         renderCategorySettings(); renderCategoryOptions();
       }
     }
 
-    function exportData() {
-      const data = { baseBudget, annualBudget, categories, posts };
+    async function exportData() {
+      const allPosts = await getAllFromDB();
+      const data = { baseBudget, categories, posts: allPosts };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -921,8 +932,14 @@
       return (str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
 
-    window.addEventListener('load', () => {
+    window.addEventListener('load', async () => {
       renderCategorySettings();
+      try {
+        posts = await getAllFromDB();
+      } catch (e) {
+        console.error('データ読み込みエラー:', e);
+        posts = [];
+      }
       render();
     });
   </script>
