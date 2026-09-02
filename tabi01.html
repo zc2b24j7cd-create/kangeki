@@ -116,15 +116,15 @@
     .calculator-box.open { display: block; }
     .calc-screen {
       background: #ffffff; border: 1px solid #b8cbd7; border-radius: 6px;
-      padding: 8px; font-size: 16px; text-align: right; margin-bottom: 8px;
-      color: #1a2b35; min-height: 38px; word-break: break-all;
+      padding: 8px; font-size: 18px; text-align: right; margin-bottom: 8px;
+      color: #1a2b35; min-height: 42px; word-break: break-all; font-weight: bold;
     }
     .calc-grid {
       display: grid; grid-template-columns: repeat(4, 1fr); gap: 5px;
     }
     .calc-btn {
       background: #ffffff; border: 1px solid #cbd9e3; border-radius: 6px;
-      padding: 10px 0; font-size: 14px; font-weight: bold; color: #2c4a5e;
+      padding: 10px 0; font-size: 18px; font-weight: bold; color: #2c4a5e;
       cursor: pointer; text-align: center;
     }
     .calc-btn:active { background: #dce6ed; }
@@ -196,6 +196,9 @@
   <!-- ライブラリ読み込み -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  
+  <!-- Google Maps APIキーを設定するまではコメントアウト -->
+  <!-- <script src="https://maps.googleapis.com/maps/api/js?key=YOUR_API_KEY&libraries=places"></script> -->
 </head>
 <body>
 
@@ -243,6 +246,7 @@
 
       <textarea id="post-input" placeholder="今日の記録を書く..."></textarea>
       
+      <!-- 場所入力 -->
       <div style="margin-bottom: 10px;">
         <input type="text" id="expense-location" placeholder="場所・お店（例: 京都駅、〇〇食堂）">
       </div>
@@ -288,7 +292,7 @@
           <button type="button" class="calc-btn" onclick="calcInput('3')">3</button>
           <button type="button" class="calc-btn action" onclick="calcInput('=')">=</button>
           
-          <button type="button" class="calc-btn" onclick="calcInput('00')" style="grid-column: span 1;">00</button>
+          <button type="button" class="calc-btn" onclick="calcInput('00')">00</button>
           <button type="button" class="calc-btn" onclick="calcInput('0')">0</button>
           <button type="button" class="calc-btn" onclick="calcInput('.')">.</button>
           <button type="button" class="calc-btn action" onclick="calcInput('apply')" style="background:#2c4a5e; font-size:12px;">金額に反映</button>
@@ -367,9 +371,7 @@
     </div>
     <div class="card">
       <div class="section-title">データ管理</div>
-      <button class="btn-light" style="width:100%; font-weight:bold; margin-bottom: 8px;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
-      <button class="btn-light" style="width:100%; font-weight:bold; background:#f0f8ff; color:#2c4a5e;" onclick="document.getElementById('import-file-input').click()">データを読み込み (復元)</button>
-      <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importData(event)">
+      <button class="btn-light" style="width:100%; font-weight:bold;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
     </div>
   </div>
 
@@ -391,74 +393,9 @@
 
   <!-- スクリプト制御部 -->
   <script>
-    // ===== IndexedDB関連はここに全て集約 =====
-    const DB_NAME = 'TravelDiaryLocalDB';
-    const DB_VERSION = 1;
-    const STORE_NAME = 'entries';
-
-    /**
-     * 1. データベースを開く（または初期化する）
-     */
-    function openDatabase() {
-        return new Promise((resolve, reject) => {
-            const request = indexedDB.open(DB_NAME, DB_VERSION);
-            request.onupgradeneeded = (event) => {
-                const db = event.target.result;
-                if (!db.objectStoreNames.contains(STORE_NAME)) {
-                    db.createObjectStore(STORE_NAME, { keyPath: 'id', autoIncrement: true });
-                }
-            };
-            request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject(event.target.error);
-        });
-    }
-
-    /**
-     * 2. データを1件保存する（追加・更新）
-     */
-    async function saveToDB(data) {
-        const db = await openDatabase();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.put(data);
-            request.onsuccess = () => resolve(request.result);
-            request.onerror = (event) => reject(event.target.error);
-        });
-    }
-
-    /**
-     * 3. データを全件取得する
-     */
-    async function getAllFromDB() {
-        const db = await openDatabase();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction(STORE_NAME, 'readonly');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.getAll();
-            request.onsuccess = (event) => resolve(event.target.result);
-            request.onerror = (event) => reject(event.target.error);
-        });
-    }
-
-    /**
-     * 4. 指定したIDのデータを1件削除する
-     */
-    async function deleteFromDB(id) {
-        const db = await openDatabase();
-        return new Promise((resolve, reject) => {
-            const transaction = db.transaction(STORE_NAME, 'readwrite');
-            const store = transaction.objectStore(STORE_NAME);
-            const request = store.delete(id);
-            request.onsuccess = () => resolve();
-            request.onerror = (event) => reject(event.target.error);
-        });
-    }
-    // ==========================================
-
     let baseBudget = Number(localStorage.getItem('tabi_base_budget')) || 30000;
     let categories = JSON.parse(localStorage.getItem('tabi_categories')) || ['食費', '交通費', '観光', '日用品', 'その他'];
-    let posts = [];
+    let posts = JSON.parse(localStorage.getItem('tabi_posts')) || [];
     let events = JSON.parse(localStorage.getItem('tabi_events')) || [];
     let currentPhotoBase64 = '';
     let editingPostId = null;
@@ -492,7 +429,6 @@
         calcExpression = calcExpression.length > 1 ? calcExpression.slice(0, -1) : "0";
       } else if (val === '=') {
         try {
-          // 安全に数式を評価
           let sanitized = calcExpression.replace(/×/g, '*').replace(/÷/g, '/');
           const res = new Function(`return (${sanitized})`)();
           if (!isNaN(res) && isFinite(res)) {
@@ -507,7 +443,7 @@
           const res = new Function(`return (${sanitized})`)();
           if (!isNaN(res) && isFinite(res)) {
             document.getElementById('amount-input').value = Math.floor(res);
-            toggleCalculator(); // 自動で電卓を閉じる
+            toggleCalculator(); // 金額を反映したら自動で電卓を閉じる
           }
         } catch (e) {
           alert('数式が正しくありません');
@@ -619,7 +555,7 @@
         img.onload = function() {
           let width = img.width;
           let height = img.height;
-          const maxSide = 400;
+          const maxSide = 1200;
 
           if (width > maxSide || height > maxSide) {
             if (width > height) {
@@ -637,7 +573,7 @@
           const ctx = canvas.getContext('2d');
           ctx.drawImage(img, 0, 0, width, height);
 
-          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.8);
+          currentPhotoBase64 = canvas.toDataURL('image/jpeg', 0.85);
 
           document.getElementById('img-preview').src = currentPhotoBase64;
           document.getElementById('img-preview-container').style.display = 'block';
@@ -700,7 +636,7 @@
       }).join('');
     }
 
-    document.getElementById('submit-btn').addEventListener('click', async () => {
+    document.getElementById('submit-btn').addEventListener('click', () => {
       const textInput = document.getElementById('post-input');
       const locationInput = document.getElementById('expense-location');
       const amountInput = document.getElementById('amount-input');
@@ -720,23 +656,21 @@
           post.category = catSelect.value;
           post.datetime = dateInput.value;
           if (currentPhotoBase64) post.photo = currentPhotoBase64;
-          await saveToDB(post);
         }
         editingPostId = null;
         document.getElementById('edit-banner').style.display = 'none';
         document.getElementById('submit-btn').textContent = '投稿する';
         showToast('更新しました！');
       } else {
-        const newPost = {
-          text: textInput.value, location: locationInput.value,
+        posts.unshift({
+          id: Date.now(), text: textInput.value, location: locationInput.value,
           amount: amountInput.value, category: catSelect.value,
           photo: currentPhotoBase64, datetime: dateInput.value
-        };
-        await saveToDB(newPost);
+        });
         showToast('投稿しました！');
       }
 
-      posts = await getAllFromDB();
+      localStorage.setItem('tabi_posts', JSON.stringify(posts));
       
       textInput.value = ''; 
       locationInput.value = ''; 
@@ -780,10 +714,10 @@
       document.getElementById('date-input').value = toDatetimeLocal(new Date());
     }
 
-    async function deletePost(postId) {
+    function deletePost(postId) {
       if (confirm('この投稿を削除しますか？')) {
-        await deleteFromDB(postId);
-        posts = await getAllFromDB();
+        posts = posts.filter(p => p.id !== postId);
+        localStorage.setItem('tabi_posts', JSON.stringify(posts));
         if (editingPostId === postId) cancelEdit();
         render();
       }
@@ -927,76 +861,20 @@
     }
 
     function removeCategory(idx) {
-      if(confirm(`“${categories[idx]}”を削除しますか？`)) {
+      if(confirm(`「${categories[idx]}」を削除しますか？`)) {
         categories.splice(idx, 1);
         localStorage.setItem('tabi_categories', JSON.stringify(categories));
         renderCategorySettings(); renderCategoryOptions();
       }
     }
 
-    // バックアップエクスポート
-    async function exportData() {
-      const allPosts = await getAllFromDB();
-      const data = { baseBudget, categories, posts: allPosts, events };
+    function exportData() {
+      const data = { baseBudget, categories, posts, events };
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
       a.download = `tabi_journal_backup.json`;
       a.click();
-    }
-
-    // バックアップインポート（読み込み）
-    async function importData(event) {
-      const file = event.target.files[0];
-      if (!file) return;
-
-      if (!confirm('バックアップファイルを読み込んでデータを復元します。\n既存のデータに追加・上書きされますがよろしいですか？')) {
-        event.target.value = '';
-        return;
-      }
-
-      const reader = new FileReader();
-      reader.onload = async function(e) {
-        try {
-          const content = e.target.result;
-          const data = JSON.parse(content);
-
-          if (data && typeof data === 'object') {
-            if (data.baseBudget) {
-              localStorage.setItem('tabi_base_budget', data.baseBudget);
-            }
-            if (data.categories) {
-              localStorage.setItem('tabi_categories', JSON.stringify(data.categories));
-            }
-            if (data.events) {
-              localStorage.setItem('tabi_events', JSON.stringify(data.events));
-            }
-
-            if (Array.isArray(data.posts)) {
-              const db = await openDatabase();
-              for (const post of data.posts) {
-                await new Promise((resolve, reject) => {
-                  const transaction = db.transaction(STORE_NAME, 'readwrite');
-                  const store = transaction.objectStore(STORE_NAME);
-                  const request = store.put(post);
-                  request.onsuccess = () => resolve();
-                  request.onerror = (err) => reject(err);
-                });
-              }
-            }
-
-            alert('データの読み込みが完了しました！ページを再読み込みします。');
-            location.reload();
-          } else {
-            alert('ファイルの形式が正しくないようです。');
-          }
-        } catch (err) {
-          alert('ファイルの読み込みに失敗しました。正しいJSONファイルかご確認ください。');
-          console.error(err);
-        }
-        event.target.value = '';
-      };
-      reader.readAsText(file);
     }
 
     function createEvent() {
@@ -1079,19 +957,23 @@
       }
     }
 
+    function initAutocomplete() {
+      const locationInput = document.getElementById('expense-location');
+      if (locationInput && typeof google !== 'undefined' && google.maps && google.maps.places) {
+        new google.maps.places.Autocomplete(locationInput, {
+          types: ['establishment'],
+          componentRestrictions: { country: 'jp' }
+        });
+      }
+    }
+
     function escapeHtml(str) {
       return (str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
     }
 
-    // アプリ起動時にIndexedDBから全データを非同期ロード
-    window.addEventListener('load', async () => {
+    window.addEventListener('load', () => {
+      initAutocomplete();
       renderCategorySettings();
-      try {
-        posts = await getAllFromDB();
-      } catch (e) {
-        console.error('データ読み込みエラー:', e);
-        posts = [];
-      }
       render();
     });
   </script>
