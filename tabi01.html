@@ -321,11 +321,21 @@
       </div>
       <div id="category-list"></div>
     </div>
+    
+
+
+
     <div class="card">
-      <div class="section-title">データ管理</div>
-      <button class="btn-light" style="width:100%; font-weight:bold;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
+      <div class="section-title">データ管理・引き継ぎ</div>
+      <div style="font-size: 12px; color: #4a6375; margin-bottom: 8px;">現在のデータを保存したり、バックアップファイルからデータを読み込んで引き継ぎができます。</div>
+      <button class="btn-light" style="width:100%; font-weight:bold; margin-bottom: 8px;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
+      <label class="btn-light" style="display:block; text-align:center; width:100%; font-weight:bold; cursor:pointer; background:#f0f8ff;">
+        バックアップからデータを復元
+        <input type="file" accept=".json" style="display:none;" onchange="importData(event)">
+      </label>
     </div>
-  </div>
+
+
 
   <!-- ナビゲーションバー -->
   <div class="nav-bar">
@@ -942,6 +952,65 @@
       }
       render();
     });
+
+
+
+    // バックアップファイルの読み込み・復元処理
+    async function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
+
+      if (!confirm('既存のデータにバックアップ内容を統合（または上書き）しますか？実行します。')) {
+        e.target.value = '';
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        try {
+          const json = JSON.parse(evt.target.result);
+          
+          // 基本予算の復元
+          if (json.baseBudget) {
+            baseBudget = Number(json.baseBudget);
+            localStorage.setItem('tabi_base_budget', baseBudget);
+            document.getElementById('setting-base-budget').value = baseBudget;
+          }
+
+          // カテゴリーの復元
+          if (json.categories && Array.isArray(json.categories)) {
+            categories = json.categories;
+            localStorage.setItem('tabi_categories', JSON.stringify(categories));
+            renderCategorySettings();
+            renderCategoryOptions();
+          }
+
+          // 投稿データの復元（IndexedDBへ保存）
+          if (json.posts && Array.isArray(json.posts)) {
+            for (const p of json.posts) {
+              // 既存のIDと被らないよう新規扱い、またはそのまま保存
+              const itemToSave = { ...p };
+              delete itemToSave.id; // IDを外して新規追加扱いにすると安全にインポートできます
+              await saveToDB(itemToSave);
+            }
+            posts = await getAllFromDB();
+          }
+
+          alert('データの復元が完了しました！');
+          render();
+        } catch (err) {
+          console.error(err);
+          alert('ファイルの読み込みに失敗しました。正しいJSONファイルかご確認ください。');
+        }
+        e.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+
+
+
+
   </script>
 </body>
 </html>
