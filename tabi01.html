@@ -1,5 +1,5 @@
 <!DOCTYPE html> 
-<!-- 0902うまくいってたやつにバックアップ追加0903--> 
+<!-- 0902＋0903バックアップ読み込み＆電卓機能追加 --> 
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -74,8 +74,10 @@
     /* フォーム要素レイアウト */
     .form-grid-row { display: flex; gap: 6px; margin-bottom: 10px; align-items: center; width: 100%; }
     .input-photo-btn { flex: 0 0 auto; }
-    .input-amount { flex: 1 1 30%; min-width: 0; }
-    .select-category { flex: 1 1 45%; min-width: 0; }
+    .amount-calc-wrap { display: flex; flex: 1 1 45%; gap: 4px; align-items: center; min-width: 0; }
+    .input-amount { flex: 1; min-width: 0; }
+    .btn-calc { flex: 0 0 auto; padding: 8px 8px; font-size: 12px; }
+    .select-category { flex: 1 1 35%; min-width: 0; }
     .submit-container { display: flex; justify-content: space-between; align-items: center; gap: 8px; }
     .input-date { flex: 1; font-size: 12px; color: #4a6375; border: 1px solid #b8cbd7; background: #f8fafc; border-radius: 6px; padding: 7px; }
 
@@ -84,6 +86,35 @@
       display: none; background: #e2ebf1; border: 1px dashed #2c4a5e; border-radius: 6px;
       padding: 6px 10px; font-size: 12px; color: #2c4a5e; margin-bottom: 8px; justify-content: space-between; align-items: center;
     }
+
+    /* 電卓モーダル */
+    .calc-modal-overlay {
+      display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+      background: rgba(26, 43, 53, 0.5); z-index: 2000; justify-content: center; align-items: center;
+    }
+    .calc-modal-overlay.active { display: flex; }
+    .calc-box {
+      background: #ffffff; border-radius: 12px; padding: 16px; width: 280px;
+      border: 1px solid #cbd9e3; box-shadow: 0 8px 24px rgba(0,0,0,0.15);
+    }
+    .calc-display {
+      background: #f8fafc; border: 1px solid #b8cbd7; border-radius: 6px;
+      padding: 10px 12px; text-align: right; font-size: 22px; font-weight: bold;
+      color: #2c4a5e; margin-bottom: 12px; overflow-x: auto; white-space: nowrap;
+    }
+    .calc-grid {
+      display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 12px;
+    }
+    .calc-btn {
+      background: #f0f4f8; border: 1px solid #cbd9e3; border-radius: 6px;
+      height: 44px; font-size: 18px; font-weight: 600; color: #2c4a5e; cursor: pointer;
+      display: flex; justify-content: center; align-items: center;
+    }
+    .calc-btn:active { background: #dce6ed; }
+    .calc-btn.op { background: #e2ebf1; color: #1a2b35; font-weight: bold; }
+    .calc-btn.clear { background: #fde8e8; color: #d9534f; font-weight: bold; }
+    .calc-actions { display: flex; gap: 8px; }
+    .calc-actions button { flex: 1; padding: 10px; font-size: 14px; }
 
     /* タイムライン・投稿 */
     .posts-list { display: flex; flex-direction: column; gap: 12px; }
@@ -141,6 +172,42 @@
   <!-- 通知用トースト -->
   <div id="toast-notification">投稿しました！</div>
 
+  <!-- 電卓モーダル -->
+  <div id="calc-modal" class="calc-modal-overlay">
+    <div class="calc-box">
+      <div id="calc-display" class="calc-display">0</div>
+      <div class="calc-grid">
+        <button class="calc-btn clear" onclick="calcInput('C')">C</button>
+        <button class="calc-btn op" onclick="calcInput('/')">/</button>
+        <button class="calc-btn op" onclick="calcInput('*')">*</button>
+        <button class="calc-btn clear" onclick="calcInput('BS')">←</button>
+
+        <button class="calc-btn" onclick="calcInput('7')">7</button>
+        <button class="calc-btn" onclick="calcInput('8')">8</button>
+        <button class="calc-btn" onclick="calcInput('9')">9</button>
+        <button class="calc-btn op" onclick="calcInput('-')">-</button>
+
+        <button class="calc-btn" onclick="calcInput('4')">4</button>
+        <button class="calc-btn" onclick="calcInput('5')">5</button>
+        <button class="calc-btn" onclick="calcInput('6')">6</button>
+        <button class="calc-btn op" onclick="calcInput('+')">+</button>
+
+        <button class="calc-btn" onclick="calcInput('1')">1</button>
+        <button class="calc-btn" onclick="calcInput('2')">2</button>
+        <button class="calc-btn" onclick="calcInput('3')">3</button>
+        <button class="calc-btn op" onclick="calcInput('=')">=</button>
+
+        <button class="calc-btn" onclick="calcInput('0')" style="grid-column: span 2;">0</button>
+        <button class="calc-btn" onclick="calcInput('00')">00</button>
+        <button class="calc-btn" onclick="calcInput('.')">.</button>
+      </div>
+      <div class="calc-actions">
+        <button class="btn-light" onclick="closeCalc()">キャンセル</button>
+        <button class="btn-submit" onclick="applyCalcResult()">入力</button>
+      </div>
+    </div>
+  </div>
+
   <!-- 月切り替え・繰越金バー -->
   <div class="month-selector-bar">
     <button class="btn-light" onclick="changeMonth(-1)">＜ 先月</button>
@@ -196,7 +263,10 @@
           写真
           <input type="file" id="photo-input" accept="image/*" style="display:none;" onchange="handlePhotoSelect(event)">
         </label>
-        <input type="number" id="amount-input" class="input-amount" placeholder="金額(円)">
+        <div class="amount-calc-wrap">
+          <input type="number" id="amount-input" class="input-amount" placeholder="金額(円)">
+          <button type="button" class="btn-light btn-calc" onclick="openCalc()">電卓</button>
+        </div>
         <select id="category-select" class="select-category"></select>
       </div>
       <div class="submit-container">
@@ -272,7 +342,11 @@
     </div>
     <div class="card">
       <div class="section-title">データ管理</div>
-      <button class="btn-light" style="width:100%; font-weight:bold;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
+      <button class="btn-light" style="width:100%; font-weight:bold; margin-bottom:10px;" onclick="exportData()">データをバックアップ保存 (JSON)</button>
+      <label class="btn-light" style="display:block; text-align:center; font-weight:bold; cursor:pointer;">
+        バックアップから復元 (JSON)
+        <input type="file" id="import-file-input" accept=".json" style="display:none;" onchange="importData(event)">
+      </label>
     </div>
   </div>
 
@@ -345,6 +419,17 @@
             request.onerror = (event) => reject(event.target.error);
         });
     }
+
+    async function clearDB() {
+        const db = await openDatabase();
+        return new Promise((resolve, reject) => {
+            const transaction = db.transaction(STORE_NAME, 'readwrite');
+            const store = transaction.objectStore(STORE_NAME);
+            const request = store.clear();
+            request.onsuccess = () => resolve();
+            request.onerror = (event) => reject(event.target.error);
+        });
+    }
     // ==========================
 
     let baseBudget = Number(localStorage.getItem('tabi_base_budget')) || 30000;
@@ -359,6 +444,9 @@
     let currentCalendarYear = now.getFullYear();
     let currentCalendarMonth = now.getMonth();
 
+    /* 電卓変数 */
+    let calcExpr = '';
+
     const toDatetimeLocal = (date) => {
       const y = date.getFullYear();
       const m = String(date.getMonth() + 1).padStart(2, '0');
@@ -372,6 +460,64 @@
     document.getElementById('current-header-date').textContent = formatDateDisplay(now);
     document.getElementById('date-input').value = toDatetimeLocal(now);
     document.getElementById('setting-base-budget').value = baseBudget;
+
+    /* 電卓機能関数 */
+    function openCalc() {
+      const currentVal = document.getElementById('amount-input').value;
+      calcExpr = currentVal ? String(currentVal) : '';
+      updateCalcDisplay();
+      document.getElementById('calc-modal').classList.add('active');
+    }
+
+    function closeCalc() {
+      document.getElementById('calc-modal').classList.remove('active');
+    }
+
+    function updateCalcDisplay() {
+      document.getElementById('calc-display').textContent = calcExpr || '0';
+    }
+
+    function calcInput(val) {
+      if (val === 'C') {
+        calcExpr = '';
+      } else if (val === 'BS') {
+        calcExpr = calcExpr.slice(0, -1);
+      } else if (val === '=') {
+        calculateResult();
+      } else {
+        const lastChar = calcExpr.slice(-1);
+        const ops = ['+', '-', '*', '/'];
+        if (ops.includes(val) && ops.includes(lastChar)) {
+          calcExpr = calcExpr.slice(0, -1) + val;
+        } else {
+          calcExpr += val;
+        }
+      }
+      updateCalcDisplay();
+    }
+
+    function calculateResult() {
+      if (!calcExpr) return;
+      try {
+        let sanitized = calcExpr.replace(/[^0-9+\-*/.]/g, '');
+        if (!sanitized) return;
+        let res = Function('"use strict"; return (' + sanitized + ')')();
+        if (isNaN(res) || !isFinite(res)) res = 0;
+        calcExpr = String(Math.round(res));
+      } catch (e) {
+        calcExpr = 'Error';
+        setTimeout(() => { calcExpr = ''; updateCalcDisplay(); }, 1000);
+      }
+    }
+
+    function applyCalcResult() {
+      calculateResult();
+      updateCalcDisplay();
+      if (calcExpr !== 'Error' && calcExpr !== '') {
+        document.getElementById('amount-input').value = Math.max(0, parseInt(calcExpr, 10) || 0);
+      }
+      closeCalc();
+    }
 
     function showToast(message) {
       const toast = document.getElementById('toast-notification');
@@ -801,6 +947,8 @@
 
     
 
+
+
     async function exportData() {
       const allPosts = await getAllFromDB();
       const data = { baseBudget, categories, posts: allPosts };
@@ -822,9 +970,62 @@
     }
 
 
+    async function importData(e) {
+      const file = e.target.files[0];
+      if (!file) return;
 
+      const reader = new FileReader();
+      reader.onload = async function(evt) {
+        try {
+          const data = JSON.parse(evt.target.result);
+          if (!data || !Array.isArray(data.posts)) {
+            alert('バックアップファイルの形式が正しくありません。');
+            return;
+          }
 
+          const isOverwrite = confirm('現在のデータを上書きして復元しますか？\n「OK」で上書き、「キャンセル」で追加読み込みします。');
 
+          if (isOverwrite) {
+            await clearDB();
+          }
+
+          if (data.baseBudget) {
+            baseBudget = Number(data.baseBudget);
+            localStorage.setItem('tabi_base_budget', baseBudget);
+            document.getElementById('setting-base-budget').value = baseBudget;
+          }
+
+          if (Array.isArray(data.categories)) {
+            if (isOverwrite) {
+              categories = data.categories;
+            } else {
+              data.categories.forEach(c => {
+                if (!categories.includes(c)) categories.push(c);
+              });
+            }
+            localStorage.setItem('tabi_categories', JSON.stringify(categories));
+          }
+
+          for (const item of data.posts) {
+            const newItem = { ...item };
+            if (!isOverwrite) delete newItem.id;
+            await saveToDB(newItem);
+          }
+
+          posts = await getAllFromDB();
+          renderCategorySettings();
+          renderCategoryOptions();
+          render();
+          showToast('復元が完了しました！');
+        } catch (err) {
+          console.error('インポートエラー:', err);
+          alert('ファイルの読み込みに失敗しました。');
+        } finally {
+          e.target.value = '';
+        }
+      };
+      reader.readAsText(file);
+    }
 
     function escapeHtml(str) {
       return (str || '').replace(/[&<>"']/g, m => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m]));
