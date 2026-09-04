@@ -1,5 +1,7 @@
-<!DOCTYPE html> 
-<!-- 0902＋0903バックアップ読み込み＆電卓機能追加 --> 
+<!DOCTYPE html>
+
+<!-- 2026-09-04 修正：繰越計算のロジック改善、カレンダー日付比較のシンプル化、不要なHTMLコメントと変数シャドーイングの削除 -->
+
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
@@ -123,7 +125,6 @@
     .post-actions { display: flex; gap: 4px; }
     .post-text { font-size: 14px; line-height: 1.5; white-space: pre-wrap; margin-bottom: 8px; }
     .post-location { font-size: 12px; color: #2c4a5e; margin-bottom: 6px; font-weight: 500; }
-    /* タイムラインの写真：縦横比を崩さず見切れない */
     .post-img { width: 100%; max-height: 300px; object-fit: contain; background: #f8fafc; border-radius: 6px; margin-bottom: 8px; display: block; }
     .post-footer { display: flex; justify-content: space-between; align-items: center; font-size: 13px; }
     .post-amount { font-weight: bold; color: #2c4a5e; font-size: 14px; }
@@ -215,7 +216,7 @@
     <button class="btn-light" onclick="changeMonth(1)">次月 ＞</button>
   </div>
   <div class="carryover-card">
-    <span>前月からの繰越（残高）:</span>
+    <span>前月までの繰越（残高）:</span>
     <span id="carryover-amount">¥0</span>
   </div>
 
@@ -430,7 +431,6 @@
             request.onerror = (event) => reject(event.target.error);
         });
     }
-    // ==========================
 
     let baseBudget = Number(localStorage.getItem('tabi_base_budget')) || 30000;
     let categories = JSON.parse(localStorage.getItem('tabi_categories')) || ['食費', '交通費', '観光', '日用品', 'その他'];
@@ -540,9 +540,8 @@
     }
 
     function calculateCarryover() {
-      const pastMonths = new Set();
+      // 経過月数（時間経過）ベースで前月までの総予算を計算し、そこから過去の総支出を引く
       let pastSpent = 0;
-
       posts.forEach(p => {
         if (!p.datetime) return;
         const d = new Date(p.datetime);
@@ -550,12 +549,32 @@
         const m = d.getMonth() + 1;
 
         if (y < displayYear || (y === displayYear && m < displayMonth)) {
-          pastMonths.add(`${y}-${m}`);
           pastSpent += (Number(p.amount) || 0);
         }
       });
 
-      return (pastMonths.size * baseBudget) - pastSpent;
+      // アプリ開始年月の起算点を最初の日付、もしくは今年の1月等に設定するか、
+      // あるいはシンプルに「表示月より前の経過月数」を計算する
+      // ここではデータを初めた最も古い投稿の月、または今年の1月を起点として自動計算（未指定時は今年1月起点）
+      let startYear = displayYear;
+      let startMonth = 1;
+      
+      posts.forEach(p => {
+        if (!p.datetime) return;
+        const d = new Date(p.datetime);
+        const y = d.getFullYear();
+        const m = d.getMonth() + 1;
+        if (y < startYear || (y === startYear && m < startMonth)) {
+          startYear = y;
+          startMonth = m;
+        }
+      });
+
+      // 起算月から表示月の前月までの総月数を算出
+      const totalPastMonths = (displayYear - startYear) * 12 + (displayMonth - startMonth);
+      const totalPastBudget = Math.max(0, totalPastMonths) * baseBudget;
+
+      return totalPastBudget - pastSpent;
     }
 
     function updateHeaderSummary() {
@@ -592,7 +611,6 @@
       if(tabName === 'budget') { renderBudgetBreakdown(); }
     }
 
-    // 画像リサイズ処理
     function handlePhotoSelect(e) {
       const file = e.target.files[0];
       if (!file) return;
@@ -603,7 +621,7 @@
         img.onload = function() {
           let width = img.width;
           let height = img.height;
-          const maxSide = 400; // 長辺400px
+          const maxSide = 400;
 
           if (width > maxSide || height > maxSide) {
             if (width > height) {
@@ -650,7 +668,6 @@
       updateHeaderSummary();
       const container = document.getElementById('posts-container');
       
-      // ★ 該当月の投稿を「日時が新しい順」にソートして表示
       const monthPosts = posts.filter(p => {
         if (!p.datetime) return false;
         const d = new Date(p.datetime);
@@ -817,7 +834,7 @@
 
         const dayPosts = posts.filter(p => {
           if (!p.datetime) return false;
-          const pDateStr = p.datetime.substring(0, 10).replace(/\//g, '-');
+          const pDateStr = p.datetime.substring(0, 10);
           return pDateStr === targetDatePrefix;
         });
 
@@ -857,13 +874,12 @@
     }
 
     function renderBudgetBreakdown() {
-      // 1. 年間グラフの計算・表示
       const annualPosts = posts.filter(p => {
         if (!p.datetime) return false;
         return new Date(p.datetime).getFullYear() === displayYear;
       });
       const annualSpent = annualPosts.reduce((sum, p) => sum + (Number(p.amount) || 0), 0);
-      const annualBudget = baseBudget * 12; // 基本予算×12ヶ月
+      const annualBudget = baseBudget * 12;
       const percent = annualBudget > 0 ? (annualSpent / annualBudget) * 100 : 0;
       
       document.getElementById('annual-title').textContent = `${displayYear}年の年間予算と支出`;
@@ -879,7 +895,6 @@
         bar.classList.remove('over');
       }
 
-      // 2. 当月のカテゴリー別内訳の計算・表示
       const container = document.getElementById('category-breakdown');
       if(!container) return;
       const monthPosts = posts.filter(p => {
@@ -945,21 +960,16 @@
       }
     }
 
-    
-
-
-
     async function exportData() {
       const allPosts = await getAllFromDB();
       const data = { baseBudget, categories, posts: allPosts };
       
-      // 保存時の日時を取得してファイル名を作成 (例: 20260903_2206)
-      const now = new Date();
-      const yyyy = now.getFullYear();
-      const mm = String(now.getMonth() + 1).padStart(2, '0');
-      const dd = String(now.getDate()).padStart(2, '0');
-      const hh = String(now.getHours()).padStart(2, '0');
-      const min = String(now.getMinutes()).padStart(2, '0');
+      const exportNow = new Date();
+      const yyyy = exportNow.getFullYear();
+      const mm = String(exportNow.getMonth() + 1).padStart(2, '0');
+      const dd = String(exportNow.getDate()).padStart(2, '0');
+      const hh = String(exportNow.getHours()).padStart(2, '0');
+      const min = String(exportNow.getMinutes()).padStart(2, '0');
       const timeStamp = `${yyyy}${mm}${dd}_${hh}${min}`;
 
       const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
@@ -968,7 +978,6 @@
       a.download = `tabi_journal_backup_${timeStamp}.json`;
       a.click();
     }
-
 
     async function importData(e) {
       const file = e.target.files[0];
